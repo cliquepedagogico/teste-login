@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const password = document.querySelector("input[name='password']").value;
 
         try {
-            const response = await fetch("http://127.0.0.1:5002/api/login", {
+            const response = await fetch("https://cliquepedagogico.github.io/api/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
