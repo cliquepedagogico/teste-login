@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from login.api import app, db, User  # Importa o app para fornecer contexto
+from app import app, db, User  # Importa o app para fornecer contexto
 
 # Função para adicionar usuários pelo terminal
 def add_user():
