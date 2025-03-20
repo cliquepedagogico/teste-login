@@ -5,6 +5,6 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log("Usuário logado com ID:", userId);
     } else {
         alert("Nenhum usuário logado. Redirecionando para login...");
-        window.location.href = "/login.html"; // Ajuste para a página de login correta
+        window.location.href = "index.hmtl"; // Ajuste para a página de login correta
     }
 });

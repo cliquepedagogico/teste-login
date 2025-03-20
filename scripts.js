@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const password = document.querySelector("input[name='password']").value;
         
         try {
-            const response = await fetch("/api/login", { // Agora chama a API localmente
+            const response = await fetch("app", { // Agora chama a API localmente
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"

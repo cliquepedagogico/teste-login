@@ -22,7 +22,7 @@ class User(UserMixin, db.Model):  # Adicionado UserMixin para login
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-@app.route('/api/login', methods=['POST'])
+@app.route('app', methods=['POST'])
 def login():
     data = request.json
     username = data.get('username')
@@ -36,6 +36,7 @@ def login():
         return jsonify({"success": True, "message": "Login bem-sucedido", "user_id": user.id})
     else:
         return jsonify({"success": False, "message": "Usuário ou senha incorretos"})
+    
 
 @app.route('/api/logout', methods=['POST'])
 @login_required
