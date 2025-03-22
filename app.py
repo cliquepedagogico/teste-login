@@ -4,7 +4,16 @@ import os
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/historico.db'
+
+# Caminho absoluto para evitar criação de instance/
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DATABASE_PATH = os.path.join(BASE_DIR, 'historico.db')
+
+# Verifica se o banco existe antes de iniciar
+if not os.path.exists(DATABASE_PATH):
+    raise FileNotFoundError(f'O banco de dados não foi encontrado em: {DATABASE_PATH}')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DATABASE_PATH}'
 db = SQLAlchemy(app)
 
 # Modelo de Usuário
@@ -32,7 +41,7 @@ def login():
         else:
             error = 'Usuário ou senha incorretos'
 
-    return render_template('index.html', error=error)  # Recebe o formulário de login da index.html
+    return render_template('index.html', error=error)
 
 @app.route('/inicio')
 def inicio():
@@ -47,6 +56,4 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
