@@ -14,6 +14,8 @@ if not os.path.exists(DATABASE_PATH):
     raise FileNotFoundError(f'O banco de dados não foi encontrado em: {DATABASE_PATH}')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DATABASE_PATH}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 
 # Modelo de Usuário
@@ -37,6 +39,12 @@ def login():
         if user:
             session['user_id'] = user.id
             session['username'] = user.username
+
+            # Imprime os dados no terminal
+            print(f"Usuário logado: {user.username}")
+            print(f"ID: {user.id}")
+            print(f"Session: {session}")
+
             return redirect(url_for('inicio'))
         else:
             error = 'Usuário ou senha incorretos'
@@ -48,7 +56,9 @@ def inicio():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    return render_template('posLogin/inicio.html', username=session['username'])
+    return render_template('posLogin/inicio.html', 
+                           username=session['username'], 
+                           user_id=session['user_id'])
 
 @app.route('/logout')
 def logout():
