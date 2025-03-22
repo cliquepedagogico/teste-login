@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:/Users/jader/OneDrive/Área de Trabalho/login chat/instance/historico.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/historico.db'
 db = SQLAlchemy(app)
 
 # Modelo de Usuário
