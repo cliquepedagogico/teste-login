@@ -1,0 +1,16 @@
+# Arquivos de ambiente
+.env
+
+# __pycache__ e arquivos temporários do Python
+__pycache__/
+*.pyc
+
+# Bancos de dados locais
+*.db
+
+# Pastas do VS Code (se estiver usando)
+.vscode/
+
+# Arquivos de sistema
+Thumbs.db
+.DS_Store
