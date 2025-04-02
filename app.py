@@ -64,7 +64,7 @@ def login():
         else:
             error = 'Usuário ou senha incorretos'
 
-    return render_template('index.html', error=error)
+    return render_template('login.html', error=error)
 
 # Página protegida
 @app.route('/inicio')
