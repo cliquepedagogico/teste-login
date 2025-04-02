@@ -4,6 +4,7 @@ import os
 import openai
 import sqlite3
 from dotenv import load_dotenv
+from flask import send_file
 
 # Importa funções do arquivo db.py
 try:
@@ -41,7 +42,7 @@ class User(db.Model):
 # Página inicial
 @app.route('/')
 def index():
-    return redirect(url_for('login'))
+     return send_file('index.html')
 
 # Página de login
 @app.route('/login', methods=['GET', 'POST'])
@@ -60,7 +61,7 @@ def login():
             print(f"ID: {user.id}")
             print(f"Session: {session}")
 
-            return redirect(url_for('inicio'))
+            return redirect(url_for('index'))
         else:
             error = 'Usuário ou senha incorretos'
 

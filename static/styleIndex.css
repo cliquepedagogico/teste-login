@@ -19,7 +19,7 @@ body{
     font-family: "Varela Round", sans-serif;
     margin: 0%;
     padding: 0%;
-    background-image: url(/Fotos/Fundo\ Site\ Sem\ Cor\ -.png);
+    background-image: url(Fundo\ Site\ Sem\ Cor\ -.png);
 }
 header{
     background-image: linear-gradient(180deg, #893FBF 5%, #01111B52 100%);
