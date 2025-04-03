@@ -4,7 +4,6 @@ import os
 import openai
 import sqlite3
 from dotenv import load_dotenv
-from flask import send_file
 
 # Importa funções do arquivo db.py
 try:
@@ -18,6 +17,7 @@ except ImportError as e:
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Caminho absoluto do banco de dados
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -41,7 +41,7 @@ class User(db.Model):
 # Página inicial
 @app.route('/')
 def index():
-     return send_file('index.html')
+    return redirect(url_for('login'))
 
 # Página de login
 @app.route('/login', methods=['GET', 'POST'])
@@ -60,11 +60,11 @@ def login():
             print(f"ID: {user.id}")
             print(f"Session: {session}")
 
-            return redirect(url_for('index'))
+            return redirect(url_for('inicio'))
         else:
             error = 'Usuário ou senha incorretos'
 
-    return render_template('login.html', error=error)
+    return render_template('index.html', error=error)
 
 # Página protegida
 @app.route('/inicio')
@@ -91,7 +91,7 @@ def logout():
 
 # 🔹 Chat com OpenAI
 load_dotenv()
-openai.api_key = os.getenv('OPENAI_API_KEY')
+
 
 def gerar_imagem(descricao):
     try:
