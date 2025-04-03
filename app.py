@@ -41,7 +41,7 @@ class User(db.Model):
 # Página inicial
 @app.route('/')
 def index():
-    return redirect(url_for('login'))
+    return redirect(url_for('inicio'))
 
 # Página de login
 @app.route('/login', methods=['GET', 'POST'])
@@ -72,7 +72,7 @@ def inicio():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    return render_template('posLogin/inicio.html', 
+    return render_template('posLogin/chat.html', 
                            username=session['username'], 
                            user_id=session['user_id'])
 

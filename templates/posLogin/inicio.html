@@ -3,69 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/inicio.css">
     <title>Minha Loja</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background-color: #f5f5f5;
-        }
-
-        header {
-            background-color: #4B0082;
-            color: white;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .container {
-            padding: 20px;
-        }
-
-        .produtos {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .produto {
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 0 8px rgba(0,0,0,0.1);
-            width: 250px;
-        }
-
-        .produto img {
-            width: 100%;
-            border-radius: 5px;
-        }
-
-        .produto h3 {
-            margin-top: 10px;
-        }
-
-        .logout-btn {
-            background-color: red;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-        }
-
-        .logout-btn:hover {
-            background-color: darkred;
-        }
-    </style>
-</head>
+    </head>
 <body>
 
     <header>
-        <h2>Bem-vindo, {{ username }}!</h2>
+        <h2>Bem-vindo</h2>
+        <a class="logout-btn" href="/login">Login</a>
         <a class="logout-btn" href="/logout">Sair</a>
     </header>
 
@@ -73,24 +18,15 @@
         <h1>Loja de Exemplos</h1>
         <div class="produtos">
             <div class="produto">
-                <img src="https://via.placeholder.com/250x150" alt="Produto 1">
-                <h3>Produto 1</h3>
-                <p>Descrição curta do produto.</p>
-                <button>Ver mais</button>
+                <h3>Assinatura Mensal</h3>
+                <p>Renovação mensal</p>
+                <a href="/login"><button class="assinar">Assinar</button></a>
             </div>
 
             <div class="produto">
-                <img src="https://via.placeholder.com/250x150" alt="Produto 2">
-                <h3>Produto 2</h3>
-                <p>Descrição curta do produto.</p>
-                <button>Ver mais</button>
-            </div>
-
-            <div class="produto">
-                <img src="https://via.placeholder.com/250x150" alt="Produto 3">
-                <h3>Chat</h3>
-                <p>Chat de conversas</p>
-                <a href="/chat_ui"><button>Entre</button></a>
+                <h3>Assinatura Anual</h3>
+                <p>Renovação Anual</p>
+                <a href="/login"><button class="assinar">Assinar</button></a>
             </div>
         </div>
     </div>
