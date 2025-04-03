@@ -23,7 +23,6 @@ openai.api_key = os.getenv('OPENAI_API_KEY')
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATABASE_PATH = os.path.join(BASE_DIR, 'usuarios.db')
 
-# Verifica se o banco existe
 if not os.path.exists(DATABASE_PATH):
     raise FileNotFoundError(f'O banco de dados não foi encontrado em: {DATABASE_PATH}')
 
@@ -38,12 +37,6 @@ class User(db.Model):
     username = db.Column(db.String(100), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
 
-# Página inicial
-@app.route('/')
-def index():
-    return redirect(url_for('inicio'))
-
-# Página de login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -55,43 +48,44 @@ def login():
         if user:
             session['user_id'] = user.id
             session['username'] = user.username
+            return redirect(url_for('index'))  # redireciona para a página unificada
 
-            print(f"Usuário logado: {user.username}")
-            print(f"ID: {user.id}")
-            print(f"Session: {session}")
-
-            return redirect(url_for('inicio'))
         else:
             error = 'Usuário ou senha incorretos'
 
+    # Se for GET ou erro, mostra o formulário de login de novo
     return render_template('index.html', error=error)
 
-# Página protegida
-@app.route('/inicio')
-def inicio():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
 
-    return render_template('posLogin/chat.html', 
-                           username=session['username'], 
-                           user_id=session['user_id'])
+# Página única com loja e chat (visibilidade baseada em login)
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    error = None
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username, password=password).first()
 
-# Página do chat
-@app.route('/chat_ui')
-def chat_ui():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    return render_template('chat.html', username=session['username'], user_id=session['user_id'])
+        if user:
+            session['user_id'] = user.id
+            session['username'] = user.username
+            return redirect(url_for('index'))  # Recarrega página com sessão ativa
+        else:
+            error = 'Usuário ou senha incorretos'
+
+    return render_template('paginaUnica.html',
+                           username=session.get('username'),
+                           user_id=session.get('user_id'),
+                           error=error)
 
 # Logout
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    return redirect(url_for('index'))
 
 # 🔹 Chat com OpenAI
 load_dotenv()
-
 
 def gerar_imagem(descricao):
     try:
@@ -120,7 +114,7 @@ def chat():
         history = data.get('history', [])
 
         if not conversa_id:
-            title = user_message[:20]  
+            title = user_message[:20]
             conversa_id = registrar_conversa(user_id, title) if registrar_conversa else None
 
         salvar_mensagem(conversa_id, 'user', user_message) if salvar_mensagem else None
