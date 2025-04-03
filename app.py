@@ -18,7 +18,6 @@ except ImportError as e:
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
-openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Caminho absoluto do banco de dados
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -92,7 +91,7 @@ def logout():
 
 # 🔹 Chat com OpenAI
 load_dotenv()
-
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 def gerar_imagem(descricao):
     try:

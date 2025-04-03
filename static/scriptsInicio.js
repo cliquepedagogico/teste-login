@@ -6,8 +6,6 @@ let selectedConversationId = null;
 const currentDate = new Date();
 const sevenDaysAgo = new Date(currentDate);
 
-//1234
-
 console.log("ID do usuário logado via Flask:", userId);
 
 
