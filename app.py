@@ -4,6 +4,11 @@ import os
 import openai
 import sqlite3
 from dotenv import load_dotenv
+import requests
+from datetime import datetime, timedelta
+agora = datetime.now()
+inicio = agora.strftime("%Y-%m-%dT%H:%M:%S.000-03:00")
+fim = (agora + timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%S.000-03:00")
 
 # Importa funções do arquivo db.py
 try:
@@ -240,6 +245,51 @@ def carregar_historico():
 
     except Exception as e:
         return jsonify({"error": f"Erro inesperado: {str(e)}"}), 500
+    
+#pagamento
+@app.route('/criar_assinatura', methods=['POST'])
+def criar_assinatura():
+    import requests
+    from datetime import datetime, timedelta
+
+    access_token = "APP_USR-5858193927098300-040318-cca10959729f3248f817853f80c965ab-2367358847"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    hoje = datetime.now()
+    um_ano = hoje + timedelta(days=365)
+
+    data = {
+        "reason": "Assinatura Premium - Mensal",
+        "auto_recurring": {
+            "frequency": 1,
+            "frequency_type": "months",
+            "transaction_amount": 0.50,
+            "currency_id": "BRL",
+            "start_date": inicio,
+            "end_date": fim
+             },
+        "back_url": "https://teste-login-0hdz.onrender.com",
+        "payer_email": "rrdsju@email.com" 
+    }
+
+    response = requests.post("https://api.mercadopago.com/preapproval", json=data, headers=headers)
+    print("🔍 STATUS:", response.status_code)
+    print("📦 RESPOSTA:", response.json())  # isso vai mostrar o erro real da API
+
+    result = response.json()
+
+    if "init_point" in result:
+        return redirect(result["init_point"])
+    else:
+        return f"Erro na criação da assinatura:<br>{result}"
+@app.route('/obrigado')
+def obrigado():
+    return "Obrigado pela assinatura! Acesso liberado com sucesso!"
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
