@@ -217,7 +217,7 @@ function toggleSidebar() {
 }
 
 function setUserName(userName) {
-    document.getElementById('user-name').textContent = userName;
+    document.getElementById('username').textContent = userName;
 }
 
 window.onload = function() {
@@ -241,7 +241,7 @@ function checkSidebarOnLoad() {
     }
 }
 
-setUserName('Jader');
+
 
 document.addEventListener('DOMContentLoaded', function() {
     loadConversations();

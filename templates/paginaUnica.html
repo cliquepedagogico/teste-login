@@ -39,7 +39,7 @@
     <div id="sidebar">
       <div id="logo-container">
         <img id="logo" src="{{ url_for('static', filename='Logo Clique Pedagógico.png') }}" alt="Logotipo">
-        <h1 id="vix-name">Olá, {{ username }} <br>Eu sou a Vix,<br>sua Assistente Pedagógica.</h1>
+        <h1 id="vix-name">Olá, <span id="user-name">{{ username }}</span><br>Eu sou a Vix,<br>sua Assistente Pedagógica.</h1>
       </div>
       <h2 id="chats-title">Chats</h2>
       <div class="question-list">
