@@ -88,12 +88,22 @@ def cadastrar():
 
     return render_template('cadastrar.html')
 
+# Página de assinatura personalizada
+@app.route('/pagina-assinatura')
+def pagina_assinatura():
+    return render_template('pagina_assinatura.html')
+
+@app.route('/assinatura', methods=['POST'])
+def assinatura():
+    return redirect(url_for('pagina_assinatura'))
+
+
 # Rota de login (por email OU username)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
     if request.method == 'POST':
-        user_input = request.form['username']  # Pode ser usuário ou e-mail
+        user_input = request.form['username']
         password = request.form['password']
 
         user = User.query.filter(
@@ -114,12 +124,6 @@ def login():
             error = 'Usuário, e-mail ou senha incorretos'
 
     return render_template('index.html', error=error)
-
-
-# Página de redirecionamento para assinatura
-@app.route('/pagina-assinatura')
-def pagina_assinatura():
-    return render_template('pagina_assinatura.html')
 
 # Rota principal
 @app.route('/')
@@ -302,7 +306,6 @@ def webhook():
         if data.get("type") == "preapproval":
             preapproval_id = data.get("data", {}).get("id")
 
-            # Busca os dados detalhados da assinatura
             headers = {
                 "Authorization": f"Bearer {ACCESS_TOKEN}"
             }
@@ -334,8 +337,6 @@ def webhook():
     except Exception as e:
         print(f"❌ Erro no webhook: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
