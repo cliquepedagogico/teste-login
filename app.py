@@ -298,45 +298,43 @@ def carregar_historico():
 def webhook():
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "Requisição inválida"}), 400
 
         if data.get("type") == "preapproval":
             preapproval_id = data.get("data", {}).get("id")
 
-            # Pega os detalhes da assinatura com o ID recebido
+            # Busca os dados detalhados da assinatura
             headers = {
                 "Authorization": f"Bearer {ACCESS_TOKEN}"
             }
             url = f"https://api.mercadopago.com/preapproval/{preapproval_id}"
             response = requests.get(url, headers=headers)
-            result = response.json()
+            assinatura_data = response.json()
 
-            if "payer_email" in result:
-                email = result["payer_email"]
-                user = User.query.filter_by(email=email).first()
+            email = assinatura_data.get("payer_email")
+            user = User.query.filter_by(email=email).first()
 
-                if user:
-                    assinatura_existente = Assinatura.query.filter_by(preapproval_id=preapproval_id).first()
-                    if not assinatura_existente:
-                        nova_assinatura = Assinatura(
-                            user_id=user.id,
-                            preapproval_id=preapproval_id,
-                            email=email,
-                            status=result.get("status", "pendente"),
-                            data_inicio=result.get("auto_recurring", {}).get("start_date"),
-                            data_fim=result.get("auto_recurring", {}).get("end_date"),
-                            plano=result.get("reason", "Assinatura")
-                        )
-                        db.session.add(nova_assinatura)
-                        db.session.commit()
-                        print("✅ Assinatura registrada para:", email)
+            if user:
+                assinatura_existente = Assinatura.query.filter_by(preapproval_id=preapproval_id).first()
+                if not assinatura_existente:
+                    nova_assinatura = Assinatura(
+                        user_id=user.id,
+                        preapproval_id=preapproval_id,
+                        email=email,
+                        status=assinatura_data.get("status"),
+                        data_inicio=assinatura_data.get("auto_recurring", {}).get("start_date"),
+                        data_fim=assinatura_data.get("auto_recurring", {}).get("end_date"),
+                        plano=assinatura_data.get("reason")
+                    )
+                    db.session.add(nova_assinatura)
+                    db.session.commit()
+                    print(f"✅ Assinatura registrada: {preapproval_id}")
 
         return jsonify({"status": "ok"}), 200
 
     except Exception as e:
-        print("Erro no webhook:", str(e))
+        print(f"❌ Erro no webhook: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 
 if __name__ == '__main__':
