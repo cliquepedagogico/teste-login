@@ -6,82 +6,132 @@ import sqlite3
 from dotenv import load_dotenv
 import requests
 from datetime import datetime, timedelta
+
+# Inicializa variáveis de tempo para assinatura
 agora = datetime.now()
 inicio = agora.strftime("%Y-%m-%dT%H:%M:%S.000-03:00")
 fim = (agora + timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%S.000-03:00")
+ACCESS_TOKEN = 'TEST-5858193927098300-040318-fbc4451721a6ac67552ba0cd96b97f12-2367358847'
 
-# Importa funções do arquivo db.py
-try:
-    from db import (
-        registrar_conversa, salvar_mensagem, carregar_conversas_ordenadas, 
-        carregar_mensagem, renomear_conversa, excluir_conversa
-    )
-except ImportError as e:
-    print(f"Erro ao importar funções de 'db.py': {e}")
-    registrar_conversa = salvar_mensagem = carregar_conversas_ordenadas = carregar_mensagem = renomear_conversa = excluir_conversa = None
-
+# Inicia o app
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
+
+# Carrega .env
+load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-# Caminho absoluto do banco de dados
+# Caminho do banco
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATABASE_PATH = os.path.join(BASE_DIR, 'usuarios.db')
-
-if not os.path.exists(DATABASE_PATH):
-    raise FileNotFoundError(f'O banco de dados não foi encontrado em: {DATABASE_PATH}')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DATABASE_PATH}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Modelo de Usuário
+# Importa funções do db.py
+try:
+    from db import (
+        registrar_conversa, salvar_mensagem, carregar_conversas_ordenadas,
+        carregar_mensagem, renomear_conversa, excluir_conversa
+    )
+except ImportError as e:
+    print(f"Erro ao importar funções de 'db.py': {e}")
+    registrar_conversa = salvar_mensagem = carregar_conversas_ordenadas = carregar_mensagem = renomear_conversa = excluir_conversa = None
+
+# Modelos
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), nullable=False, unique=True)
+    email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
+    telefone = db.Column(db.String(20))
+    cpf = db.Column(db.String(14))
+    data_nascimento = db.Column(db.String(10))
 
+class Assinatura(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer)
+    preapproval_id = db.Column(db.String(100), unique=True)
+    email = db.Column(db.String(100))
+    status = db.Column(db.String(50))
+    data_inicio = db.Column(db.String(50))
+    data_fim = db.Column(db.String(50))
+    plano = db.Column(db.String(100))
+
+# Função de cadastro
+@app.route('/cadastrar', methods=['GET', 'POST'])
+def cadastrar():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        telefone = request.form['telefone']
+        cpf = request.form['cpf']
+        data_nascimento = request.form['data_nascimento']
+
+        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+            return "Usuário ou e-mail já cadastrado."
+
+        novo_usuario = User(
+            username=username,
+            email=email,
+            password=password,
+            telefone=telefone,
+            cpf=cpf,
+            data_nascimento=data_nascimento
+        )
+        db.session.add(novo_usuario)
+        db.session.commit()
+        return redirect(url_for('login'))
+
+    return render_template('cadastrar.html')
+
+# Rota de login (por email OU username)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
     if request.method == 'POST':
-        username = request.form['username']
+        user_input = request.form['username']  # Pode ser usuário ou e-mail
         password = request.form['password']
-        user = User.query.filter_by(username=username, password=password).first()
+
+        user = User.query.filter(
+            (User.username == user_input) | (User.email == user_input),
+            User.password == password
+        ).first()
 
         if user:
             session['user_id'] = user.id
             session['username'] = user.username
-            return redirect(url_for('index'))  # redireciona para a página unificada
 
+            assinatura = Assinatura.query.filter_by(user_id=user.id).first()
+            if assinatura:
+                return redirect(url_for('index'))
+            else:
+                return redirect(url_for('pagina_assinatura'))
         else:
-            error = 'Usuário ou senha incorretos'
+            error = 'Usuário, e-mail ou senha incorretos'
 
-    # Se for GET ou erro, mostra o formulário de login de novo
     return render_template('index.html', error=error)
 
 
-# Página única com loja e chat (visibilidade baseada em login)
-@app.route('/', methods=['GET', 'POST'])
+# Página de redirecionamento para assinatura
+@app.route('/pagina-assinatura')
+def pagina_assinatura():
+    return render_template('pagina_assinatura.html')
+
+# Rota principal
+@app.route('/')
 def index():
-    error = None
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = User.query.filter_by(username=username, password=password).first()
+    user_id = session.get('user_id')
+    username = session.get('username')
 
-        if user:
-            session['user_id'] = user.id
-            session['username'] = user.username
-            return redirect(url_for('index'))  # Recarrega página com sessão ativa
-        else:
-            error = 'Usuário ou senha incorretos'
+    assinatura = None
+    if user_id:
+        assinatura = Assinatura.query.filter_by(user_id=user_id).first()
 
-    return render_template('paginaUnica.html',
-                           username=session.get('username'),
-                           user_id=session.get('user_id'),
-                           error=error)
+    return render_template('paginaUnica.html', username=username, user_id=user_id, tem_assinatura=bool(assinatura))
 
 # Logout
 @app.route('/logout')
@@ -89,9 +139,7 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-# 🔹 Chat com OpenAI
-load_dotenv()
-
+# Gera imagem com DALL-E
 def gerar_imagem(descricao):
     try:
         response = openai.images.generate(
@@ -245,50 +293,50 @@ def carregar_historico():
 
     except Exception as e:
         return jsonify({"error": f"Erro inesperado: {str(e)}"}), 500
-    
-#pagamento
-@app.route('/criar_assinatura', methods=['POST'])
-def criar_assinatura():
-    import requests
-    from datetime import datetime, timedelta
 
-    access_token = "APP_USR-5858193927098300-040318-cca10959729f3248f817853f80c965ab-2367358847"
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
-    }
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Requisição inválida"}), 400
 
-    hoje = datetime.now()
-    um_ano = hoje + timedelta(days=365)
+        if data.get("type") == "preapproval":
+            preapproval_id = data.get("data", {}).get("id")
 
-    data = {
-        "reason": "Assinatura Premium - Mensal",
-        "auto_recurring": {
-            "frequency": 1,
-            "frequency_type": "months",
-            "transaction_amount": 0.50,
-            "currency_id": "BRL",
-            "start_date": inicio,
-            "end_date": fim
-             },
-        "back_url": "https://teste-login-0hdz.onrender.com",
-        "payer_email": "rrdsju@email.com" 
-    }
+            # Pega os detalhes da assinatura com o ID recebido
+            headers = {
+                "Authorization": f"Bearer {ACCESS_TOKEN}"
+            }
+            url = f"https://api.mercadopago.com/preapproval/{preapproval_id}"
+            response = requests.get(url, headers=headers)
+            result = response.json()
 
-    response = requests.post("https://api.mercadopago.com/preapproval", json=data, headers=headers)
-    print("🔍 STATUS:", response.status_code)
-    print("📦 RESPOSTA:", response.json())  # isso vai mostrar o erro real da API
+            if "payer_email" in result:
+                email = result["payer_email"]
+                user = User.query.filter_by(email=email).first()
 
-    result = response.json()
+                if user:
+                    assinatura_existente = Assinatura.query.filter_by(preapproval_id=preapproval_id).first()
+                    if not assinatura_existente:
+                        nova_assinatura = Assinatura(
+                            user_id=user.id,
+                            preapproval_id=preapproval_id,
+                            email=email,
+                            status=result.get("status", "pendente"),
+                            data_inicio=result.get("auto_recurring", {}).get("start_date"),
+                            data_fim=result.get("auto_recurring", {}).get("end_date"),
+                            plano=result.get("reason", "Assinatura")
+                        )
+                        db.session.add(nova_assinatura)
+                        db.session.commit()
+                        print("✅ Assinatura registrada para:", email)
 
-    if "init_point" in result:
-        return redirect(result["init_point"])
-    else:
-        return f"Erro na criação da assinatura:<br>{result}"
-@app.route('/obrigado')
-def obrigado():
-    return "Obrigado pela assinatura! Acesso liberado com sucesso!"
+        return jsonify({"status": "ok"}), 200
 
+    except Exception as e:
+        print("Erro no webhook:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
