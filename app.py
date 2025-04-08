@@ -88,10 +88,7 @@ def cadastrar():
 
     return render_template('cadastrar.html')
 
-# Página de assinatura personalizada
-@app.route('/pagina-assinatura')
-def pagina_assinatura():
-    return render_template('pagina_assinatura.html')
+
 
 @app.route('/assinatura', methods=['POST'])
 def assinatura():
@@ -106,20 +103,18 @@ def login():
         user_input = request.form['username']
         password = request.form['password']
 
+        # Busca por usuário com nome OU e-mail e senha correspondente
         user = User.query.filter(
-            (User.username == user_input) | (User.email == user_input),
-            User.password == password
+            ((User.username == user_input) | (User.email == user_input)),
+            (User.password == password)
         ).first()
 
         if user:
             session['user_id'] = user.id
             session['username'] = user.username
 
-            assinatura = Assinatura.query.filter_by(user_id=user.id).first()
-            if assinatura:
-                return redirect(url_for('index'))
-            else:
-                return redirect(url_for('pagina_assinatura'))
+            # Redireciona diretamente para a página inicial
+            return redirect(url_for('index'))
         else:
             error = 'Usuário, e-mail ou senha incorretos'
 
