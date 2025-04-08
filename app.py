@@ -29,12 +29,8 @@ DATABASE_PATH = os.path.join(BASE_DIR, 'usuarios.db')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DATABASE_PATH}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'  # Arquivo local
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
-
-
 
 # Importa funções do db.py
 try:
@@ -373,6 +369,7 @@ def webhook():
         return jsonify({"error": str(e)}), 500
     
 
+print("Banco de dados:", app.config['SQLALCHEMY_DATABASE_URI'])
 
 
 if __name__ == '__main__':
