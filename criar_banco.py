@@ -1,6 +1,16 @@
-from app import app, db
+from app import app
+from models import db, User
 
-# Envolve o comando dentro do contexto da aplicação
 with app.app_context():
-    db.create_all()
-    print("✅ Banco de dados 'usuarios.db' recriado com sucesso!")
+    if not User.query.filter_by(email="teste@exemplo.com").first():
+        novo_user = User(
+            username="teste",
+            email="teste@exemplo.com",
+            password="123",
+            telefone="00000000000",
+            cpf="00000000000",
+            data_nascimento="2000-01-01"
+        )
+        db.session.add(novo_user)
+        db.session.commit()
+        print("✅ Usuário teste criado!")

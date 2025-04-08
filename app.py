@@ -6,6 +6,8 @@ import sqlite3
 from dotenv import load_dotenv
 import requests
 from datetime import datetime, timedelta
+from models import db, User, Assinatura  
+
 
 # Inicializa variáveis de tempo para assinatura
 agora = datetime.now()
@@ -27,8 +29,12 @@ DATABASE_PATH = os.path.join(BASE_DIR, 'usuarios.db')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DATABASE_PATH}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'  # Arquivo local
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
+db.init_app(app)
+
+
 
 # Importa funções do db.py
 try:
@@ -40,25 +46,6 @@ except ImportError as e:
     print(f"Erro ao importar funções de 'db.py': {e}")
     registrar_conversa = salvar_mensagem = carregar_conversas_ordenadas = carregar_mensagem = renomear_conversa = excluir_conversa = None
 
-# Modelos
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), nullable=False, unique=True)
-    email = db.Column(db.String(120), nullable=False, unique=True)
-    password = db.Column(db.String(100), nullable=False)
-    telefone = db.Column(db.String(20))
-    cpf = db.Column(db.String(14))
-    data_nascimento = db.Column(db.String(10))
-
-class Assinatura(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer)
-    preapproval_id = db.Column(db.String(100), unique=True)
-    email = db.Column(db.String(100))
-    status = db.Column(db.String(50))
-    data_inicio = db.Column(db.String(50))
-    data_fim = db.Column(db.String(50))
-    plano = db.Column(db.String(100))
 
 # Função de cadastro
 @app.route('/cadastrar', methods=['GET', 'POST'])
@@ -97,8 +84,7 @@ def pagina_assinatura():
 def assinatura():
     return redirect(url_for('pagina_assinatura'))
 
-
-# Rota de login (por email OU username)
+# Rota de login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -114,12 +100,7 @@ def login():
         if user:
             session['user_id'] = user.id
             session['username'] = user.username
-
-            assinatura = Assinatura.query.filter_by(user_id=user.id).first()
-            if assinatura:
-                return redirect(url_for('index'))
-            else:
-                return redirect(url_for('pagina_assinatura'))
+            return redirect(url_for('index'))
         else:
             error = 'Usuário, e-mail ou senha incorretos'
 
@@ -130,12 +111,13 @@ def login():
 def index():
     user_id = session.get('user_id')
     username = session.get('username')
+    tem_assinatura = False
 
-    assinatura = None
     if user_id:
-        assinatura = Assinatura.query.filter_by(user_id=user_id).first()
+        assinatura = Assinatura.query.filter_by(user_id=user_id, status='authorized').first()
+        tem_assinatura = bool(assinatura)
 
-    return render_template('paginaUnica.html', username=username, user_id=user_id, tem_assinatura=bool(assinatura))
+    return render_template('paginaUnica.html', username=username, user_id=user_id, tem_assinatura=tem_assinatura)
 
 # Logout
 @app.route('/logout')
@@ -162,9 +144,13 @@ def chat():
     if 'user_id' not in session:
         return jsonify({"error": "Usuário não autenticado"}), 401
 
+    user_id = session['user_id']
+    assinatura = Assinatura.query.filter_by(user_id=user_id, status='authorized').first()
+    if not assinatura:
+        return jsonify({"error": "Acesso negado. Assinatura não encontrada ou inativa."}), 403
+
     try:
         data = request.json
-        user_id = session['user_id']
         user_message = data.get('message')
         funcionalidade = data.get('funcionalidade')
         conversa_id = data.get('conversa_id')
@@ -207,6 +193,7 @@ def chat():
     except Exception as e:
         print(f"Erro no chat: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/carregar_conversas', methods=['POST'])
 def carregar_conversas_usuario():
@@ -259,6 +246,24 @@ def excluir_conversa_view():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/registrar_assinatura_teste/<int:user_id>')
+def registrar_assinatura_teste(user_id):
+    from datetime import datetime, timedelta
+
+    nova_assinatura = Assinatura(
+        user_id=user_id,
+        preapproval_id=f"teste-{user_id}-{datetime.now().timestamp()}",
+        email=User.query.get(user_id).email,
+        status='authorized',
+        data_inicio=datetime.now().isoformat(),
+        data_fim=(datetime.now() + timedelta(days=365)).isoformat(),
+        plano="Assinatura de Teste"
+    )
+    db.session.add(nova_assinatura)
+    db.session.commit()
+    return f"Assinatura registrada com sucesso para o usuário {user_id}"
+
+
 @app.route('/carregar_historico', methods=['POST'])
 def carregar_historico():
     try:
@@ -302,22 +307,46 @@ def carregar_historico():
 def webhook():
     try:
         data = request.get_json()
+        print("📥 Dados recebidos:", data)
 
         if data.get("type") == "preapproval":
             preapproval_id = data.get("data", {}).get("id")
+            print("🔍 Preapproval ID:", preapproval_id)
 
-            headers = {
-                "Authorization": f"Bearer {ACCESS_TOKEN}"
-            }
-            url = f"https://api.mercadopago.com/preapproval/{preapproval_id}"
-            response = requests.get(url, headers=headers)
-            assinatura_data = response.json()
+            # ----- SIMULAÇÃO LOCAL PARA TESTE -----
+            if preapproval_id == "TESTE_LOCAL":
+                assinatura_data = {
+                    "payer_email": "teste@exemplo.com",
+                    "status": "authorized",
+                    "reason": "Plano Premium",
+                    "auto_recurring": {
+                        "start_date": "2025-04-08T00:00:00Z",
+                        "end_date": "2026-04-08T00:00:00Z"
+                    }
+                }
+            else:
+                headers = {
+                    "Authorization": f"Bearer {ACCESS_TOKEN}"
+                }
+                url = f"https://api.mercadopago.com/preapproval/{preapproval_id}"
+                response = requests.get(url, headers=headers)
+                assinatura_data = response.json()
+                print("📦 Dados da assinatura:", assinatura_data)
 
             email = assinatura_data.get("payer_email")
+            print("📧 Email do pagador:", email)
+
+            if not email:
+                print("❌ Email não encontrado na assinatura.")
+                return jsonify({"error": "Email não encontrado na assinatura."}), 400
+
             user = User.query.filter_by(email=email).first()
+            print("👤 Usuário encontrado:", user)
 
             if user:
                 assinatura_existente = Assinatura.query.filter_by(preapproval_id=preapproval_id).first()
+                print("🧾 Assinatura já existe?", assinatura_existente)
+
                 if not assinatura_existente:
                     nova_assinatura = Assinatura(
                         user_id=user.id,
@@ -331,12 +360,20 @@ def webhook():
                     db.session.add(nova_assinatura)
                     db.session.commit()
                     print(f"✅ Assinatura registrada: {preapproval_id}")
+                else:
+                    print("⚠️ Assinatura já existe, não será duplicada.")
+            else:
+                print("❌ Usuário não encontrado no banco.")
 
         return jsonify({"status": "ok"}), 200
 
     except Exception as e:
-        print(f"❌ Erro no webhook: {str(e)}")
+        db.session.rollback()
+        print(f"❌ ERRO no webhook: {str(e)}")
         return jsonify({"error": str(e)}), 500
+    
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
