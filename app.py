@@ -6,6 +6,7 @@ import sqlite3
 from dotenv import load_dotenv
 from datetime import datetime
 from models import db, User, Assinatura
+import mercadopago
 
 # Inicia o app
 app = Flask(__name__)
@@ -14,6 +15,7 @@ app.secret_key = 'chave_secreta'
 # Carrega .env
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
+sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_TOKEN"))
 
 # Caminho do banco de dados
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -33,6 +35,23 @@ except ImportError as e:
     registrar_conversa = salvar_mensagem = carregar_conversas_ordenadas = carregar_mensagem = renomear_conversa = excluir_conversa = None
 
 
+def verificar_assinatura_por_email(email):
+    conn = sqlite3.connect("assinaturas.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT status FROM assinaturas
+        WHERE email = ?
+        ORDER BY data_criacao DESC
+        LIMIT 1
+    """, (email,))
+    resultado = cursor.fetchone()
+    conn.close()
+
+    if resultado and resultado[0] == 'authorized':
+        return True
+    return False
+
+
 # Função de cadastro
 @app.route('/cadastrar', methods=['GET', 'POST'])
 def cadastrar():
@@ -44,20 +63,24 @@ def cadastrar():
         cpf = request.form['cpf']
         data_nascimento = request.form['data_nascimento']
 
-        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-            return "Usuário ou e-mail já cadastrado."
+        # Salvar no banco de dados SQLite
+        conn = sqlite3.connect("assinaturas.db")
+        cursor = conn.cursor()
 
-        novo_usuario = User(
-            username=username,
-            email=email,
-            password=password,
-            telefone=telefone,
-            cpf=cpf,
-            data_nascimento=data_nascimento
-        )
-        db.session.add(novo_usuario)
-        db.session.commit()
-        return redirect(url_for('login'))
+        # Verifica se o e-mail já está cadastrado
+        cursor.execute("SELECT * FROM assinaturas WHERE email = ?", (email,))
+        if cursor.fetchone():
+            conn.close()
+            return "⚠️ Este e-mail já está cadastrado."
+
+        cursor.execute("""
+            INSERT INTO assinaturas (username, email, senha, telefone, cpf, data_nascimento)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (username, email, password, telefone, cpf, data_nascimento))
+        conn.commit()
+        conn.close()
+
+        return redirect('/login')
 
     return render_template('cadastrar.html')
 
@@ -66,26 +89,37 @@ def cadastrar():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
+
     if request.method == 'POST':
-        user_input = request.form['username']
+        user_input = request.form['username']  # pode ser username ou email
         password = request.form['password']
 
-        user = User.query.filter(
-            ((User.username == user_input) | (User.email == user_input)),
-            (User.password == password)
-        ).first()
+        import sqlite3
+        conn = sqlite3.connect("assinaturas.db")
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT id, username, email, senha, status
+            FROM assinaturas
+            WHERE (username = ? OR email = ?) AND senha = ?
+        """, (user_input, user_input, password))
+
+        user = cursor.fetchone()
+        conn.close()
 
         if user:
-            session['user_id'] = user.id
-            session['username'] = user.username
-            return redirect(url_for('index'))
+            session['user_id'] = user[0]
+            session['username'] = user[1]
+            session['email'] = user[2]
+            session['status_assinatura'] = user[4]  # 'authorized' ou 'nao_assinante'
+            return redirect('/')
         else:
-            error = 'Usuário, e-mail ou senha incorretos'
+            error = "Usuário, e-mail ou senha incorretos"
 
     return render_template('index.html', error=error)
 
 
-# Rota principal
+
 @app.route('/')
 def index():
     user_id = session.get('user_id')
@@ -93,10 +127,14 @@ def index():
     tem_assinatura = False
 
     if user_id:
-        assinatura = Assinatura.query.filter_by(user_id=user_id, status='authorized').first()
-        tem_assinatura = bool(assinatura)
+        # Busca o usuário pelo SQLAlchemy
+        user = User.query.get(user_id)
+        if user:
+            # Verifica se o email dele tem assinatura ativa
+            tem_assinatura = verificar_assinatura_por_email(user.email)
 
     return render_template('paginaUnica.html', username=username, user_id=user_id, tem_assinatura=tem_assinatura)
+
 
 
 @app.route('/logout')
@@ -266,6 +304,42 @@ def carregar_historico():
     except Exception as e:
         return jsonify({"error": f"Erro inesperado: {str(e)}"}), 500
 
+@app.route("/assinatura")
+def gerar_assinatura():
+    preapproval_plan_id = "2c9380849154066301916d1a4b330a69"
+    url = f"https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id={preapproval_plan_id}"
+    return redirect(url)  # redireciona o cliente direto pro Mercado Pago
+
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    data = request.json
+    print("Webhook recebido:", data)
+
+    if data.get("type") == "preapproval":
+        preapproval_id = data.get("data", {}).get("id")
+        assinatura = sdk.preapproval().get(preapproval_id)["response"]
+
+        email = assinatura.get("payer_email")
+        status = assinatura.get("status")
+        data_assinatura = assinatura.get("date_created")
+
+        conn = sqlite3.connect("assinaturas.db")
+        cursor = conn.cursor()
+
+        # Atualiza o status do usuário com base no e-mail
+        cursor.execute("""
+            UPDATE assinaturas
+            SET status = ?, data_assinatura = ?
+            WHERE email = ?
+        """, (status, data_assinatura, email))
+
+        conn.commit()
+        conn.close()
+
+        print(f"Assinatura atualizada: {email} - {status}")
+
+    return jsonify({"status": "recebido"}), 200
 
 
 if __name__ == '__main__':

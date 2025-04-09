@@ -23,7 +23,7 @@
         <div class="produto">
           <h3>Assinatura Mensal</h3>
           <p>Renovação mensal</p>
-          <a href="https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=2c9380849154066301916d1a4b330a69"><button class="assinar">Assinar</button></a>
+          <a href="/cadastrar"><button class="assinar">Assinar</button></a>
         </div>
 
         <div class="produto">
@@ -36,7 +36,7 @@
   </div>
 
   <!-- BLOCO: CHAT VIX (após login) -->
-  <div id="chat-container" {% if not user_id %}style="display: none;"{% endif %}>
+  <div id="chat-container" {% if not user_id or not tem_assinatura %}style="display: none;"{% endif %}>
     <div id="sidebar">
       <div id="logo-container">
         <img id="logo" src="{{ url_for('static', filename='Logo Clique Pedagógico.png') }}" alt="Logotipo">
