@@ -267,9 +267,6 @@ def carregar_historico():
         return jsonify({"error": f"Erro inesperado: {str(e)}"}), 500
 
 
-# Verificação do caminho do banco
-print("Banco de dados:", app.config['SQLALCHEMY_DATABASE_URI'])
-
 
 if __name__ == '__main__':
     app.run(debug=True)
