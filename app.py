@@ -127,11 +127,15 @@ def index():
     tem_assinatura = False
 
     if user_id:
-        # Busca o usuário pelo SQLAlchemy
-        user = User.query.get(user_id)
-        if user:
-            # Verifica se o email dele tem assinatura ativa
-            tem_assinatura = verificar_assinatura_por_email(user.email)
+        conn = sqlite3.connect("assinaturas.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT email FROM assinaturas WHERE id = ?", (user_id,))
+        result = cursor.fetchone()
+        conn.close()
+
+        if result:
+            email = result[0]
+            tem_assinatura = verificar_assinatura_por_email(email)
 
     return render_template('paginaUnica.html', username=username, user_id=user_id, tem_assinatura=tem_assinatura)
 
