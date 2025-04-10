@@ -359,12 +359,3 @@ function deleteConversation(conversationId) {
 }
 
 console.log("final ID do usuário logado:", userId);
-
-
-
-fetch("/assinatura", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ card_token: token }) // apenas isso!
-  })
-  

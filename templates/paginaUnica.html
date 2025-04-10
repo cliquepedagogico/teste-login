@@ -11,7 +11,7 @@
 
 
   <!-- BLOCO: CONTEÚDO INICIAL (antes do login) -->
-  <div id="inicio-container" {% if user_id %}style="display: none;"{% endif %}>
+  <div id="inicio-container" {% if user_id and tem_assinatura %}style="display: none;"{% endif %}>
     <header>
       <h2>Bem-vindo</h2>
       <a class="logout-btn" href="/login">Login</a>
@@ -37,6 +37,7 @@
 
   <!-- BLOCO: CHAT VIX (após login) -->
   <div id="chat-container" {% if not user_id or not tem_assinatura %}style="display: none;"{% endif %}>
+
     <div id="sidebar">
       <div id="logo-container">
         <img id="logo" src="{{ url_for('static', filename='Logo Clique Pedagógico.png') }}" alt="Logotipo">
@@ -78,33 +79,6 @@
   </script>
 
   <script src="{{ url_for('static', filename='scriptsInicio.js') }}"></script>
-  <script>
-    const logoVixUrl = "{{ url_for('static', filename='Logo Clique Pedagógico.png') }}";
-  </script>
 
-<script type="text/javascript">
-  (function() {
-     function $MPC_load() {
-        window.$MPC_loaded !== true && (function() {
-        var s = document.createElement("script");
-        s.type = "text/javascript";
-        s.async = true;
-        s.src = document.location.protocol + "//secure.mlstatic.com/mptools/render.js";
-        var x = document.getElementsByTagName('script')[0];
-        x.parentNode.insertBefore(s, x);
-        window.$MPC_loaded = true;
-     })();
-  }
-  window.$MPC_loaded !== true ? (window.attachEvent ? window.attachEvent('onload', $MPC_load) : window.addEventListener('load', $MPC_load, false)) : null;
-  })();
- /*
-       // to receive event with message when closing modal from congrants back to site
-       function $MPC_message(event) {
-         // onclose modal ->CALLBACK FUNCTION
-        // !!!!!!!!FUNCTION_CALLBACK HERE Received message: {event.data} preapproval_id !!!!!!!!
-       }
-       window.$MPC_loaded !== true ? (window.addEventListener("message", $MPC_message)) : null; 
-       */
-</script>
 </body>
 </html>
