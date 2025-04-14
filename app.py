@@ -277,7 +277,7 @@ def carregar_conversas_usuario():
     return jsonify([{"id": conv[0], "title": conv[1]} for conv in conversas])
 # (carregar_conversas_usuario, carregar_mensagem_view, renomear, excluir_conversa_view, carregar_historico etc.)
 
-PRICE_ID = 'price_1RDte0C0fLaODukvJzGoypwP'  # <- copie da Stripe
+PRICE_ID = 'price_1RDwAOFpRYJ4Ld4ULwwdChsY'  # <- copie da Stripe
 
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
@@ -289,7 +289,7 @@ def create_checkout_session():
                 'price': PRICE_ID,
                 'quantity': 1,
             }],
-            success_url='https://5b85-170-239-254-184.ngrok-free.app/sucesso?session_id={CHECKOUT_SESSION_ID}',
+            success_url='https://https://teste-login-0hdz.onrender.com/sucesso?session_id={CHECKOUT_SESSION_ID}',
             cancel_url='https://seusite.com/cancelado',
         )
         return jsonify({'url': session.url})
