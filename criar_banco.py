@@ -40,21 +40,28 @@
 # print("✅ Campo 'usuario_id' removido com sucesso.")
 
 
+# import sqlite3
+
+# # Troque aqui pelo e-mail que você quer autorizar
+# EMAIL_DO_USUARIO = "exemplo@email.com"
+
+# conn = sqlite3.connect("sistema_assinaturas.db")
+# cursor = conn.cursor()
+
+# cursor.execute("""
+#     UPDATE assinatura
+#     SET status = 'authorized', data_inicio = datetime('now')
+#     WHERE email = ?
+# """, ('teste@gmail.com',))
+
+# conn.commit()
+# conn.close()
+
+# print(f"✅ Usuário {EMAIL_DO_USUARIO} agora está com assinatura 'authorized'.")
 import sqlite3
-
-# Troque aqui pelo e-mail que você quer autorizar
-EMAIL_DO_USUARIO = "exemplo@email.com"
-
-conn = sqlite3.connect("sistema_assinaturas.db")
+conn = sqlite3.connect('sistema_assinaturas.db')
 cursor = conn.cursor()
-
-cursor.execute("""
-    UPDATE assinatura
-    SET status = 'authorized', data_inicio = datetime('now')
-    WHERE email = ?
-""", ('teste@gmail.com',))
-
+cursor.execute("ALTER TABLE assinatura ADD COLUMN stripe_subscription_id TEXT;")
 conn.commit()
 conn.close()
-
-print(f"✅ Usuário {EMAIL_DO_USUARIO} agora está com assinatura 'authorized'.")
+print("Coluna adicionada com sucesso.")

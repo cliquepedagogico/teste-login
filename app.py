@@ -2,11 +2,13 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import os
+import stripe
 import openai
 import sqlite3
 from dotenv import load_dotenv
 from datetime import datetime
 import mercadopago
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
@@ -14,7 +16,7 @@ app.secret_key = 'chave_secreta'
 # Carrega .env
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
-sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_TOKEN"))
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 # Caminho do banco de dados principal
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -275,50 +277,75 @@ def carregar_conversas_usuario():
     return jsonify([{"id": conv[0], "title": conv[1]} for conv in conversas])
 # (carregar_conversas_usuario, carregar_mensagem_view, renomear, excluir_conversa_view, carregar_historico etc.)
 
-@app.route("/assinatura")
-def gerar_assinatura():
-    preapproval_plan_id = "2c9380849154066301916d1a4b330a69"
-    url = f"https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id={preapproval_plan_id}"
-    return redirect(url)
+PRICE_ID = 'price_1RDte0C0fLaODukvJzGoypwP'  # <- copie da Stripe
+
+@app.route('/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            mode='subscription',  # <- aqui definimos assinatura
+            line_items=[{
+                'price': PRICE_ID,
+                'quantity': 1,
+            }],
+            success_url='https://5b85-170-239-254-184.ngrok-free.app/sucesso?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url='https://seusite.com/cancelado',
+        )
+        return jsonify({'url': session.url})
+    except Exception as e:
+        return jsonify(error=str(e)), 400
+
 
 @app.route('/webhook', methods=['POST'])
-def webhook():
-    data = request.json
-    print("📨 Webhook recebido:", data)
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
+    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")  # coloque esse no .env
 
-    if data.get("type") == "preapproval":
-        preapproval_id = data.get("data", {}).get("id")
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except stripe.error.SignatureVerificationError as e:
+        print('❌ Assinatura do webhook inválida.')
+        return 'Invalid signature', 400
 
-        # Ignora notificações de teste sem ID válido
-        if not preapproval_id or preapproval_id == "0000":
-            print("⚠️ Notificação ignorada: ID inválido ou simulação.")
-            return jsonify({"status": "ignorado"}), 200
+    # 🎯 Identifica o tipo de evento
+    event_type = event['type']
+    data = event['data']['object']
 
-        try:
-            assinatura = sdk.preapproval().get(preapproval_id)["response"]
-            email = assinatura.get("payer_email")
-            status = assinatura.get("status")
-            data_assinatura = assinatura.get("date_created")
-            proxima_cobranca = assinatura.get("next_payment_date")
+    print(f"📨 Webhook Stripe recebido: {event_type}")
 
-            print(f"🔔 Assinatura Mercado Pago: {email} | {status}")
+    if event_type == 'checkout.session.completed':
+        cliente_email = data.get('customer_email')
+        subscription_id = data.get('subscription')
 
-            conn = sqlite3.connect("sistema_assinaturas.db")
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE assinatura
-                SET status = ?, data_inicio = ?, data_expiracao = ?, preapproval_id = ?
-                WHERE email = ?
-            """, (status, data_assinatura, proxima_cobranca, preapproval_id, email))
+        print(f"✅ Checkout concluído para {cliente_email} | Assinatura ID: {subscription_id}")
 
-            conn.commit()
-            conn.close()
+        # Aqui você pode salvar a assinatura no seu banco
+        conn = sqlite3.connect('sistema_assinaturas.db')
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO assinatura (email, status, stripe_subscription_id, data_inicio)
+            VALUES (?, ?, ?, datetime('now'))
+        """, (cliente_email, 'ativa', subscription_id))
+        conn.commit()
+        conn.close()
 
-            print("✅ Assinatura atualizada com sucesso.")
-        except Exception as e:
-            print("❌ Erro ao processar assinatura:", str(e))
+    elif event_type == 'customer.subscription.deleted':
+        subscription_id = data['id']
+        print(f"⚠️ Assinatura cancelada: {subscription_id}")
 
-    return jsonify({"status": "recebido"}), 200
+        conn = sqlite3.connect('sistema_assinaturas.db')
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE assinatura SET status = 'cancelada' WHERE stripe_subscription_id = ?
+        """, (subscription_id,))
+        conn.commit()
+        conn.close()
+
+    return jsonify({'status': 'recebido'}), 200
 
 
 if __name__ == '__main__':
