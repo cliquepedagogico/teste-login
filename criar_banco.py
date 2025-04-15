@@ -58,10 +58,18 @@
 # conn.close()
 
 # print(f"✅ Usuário {EMAIL_DO_USUARIO} agora está com assinatura 'authorized'.")
+# import sqlite3
+# conn = sqlite3.connect('sistema_assinaturas.db')
+# cursor = conn.cursor()
+# cursor.execute("ALTER TABLE assinatura ADD COLUMN stripe_subscription_id TEXT;")
+# conn.commit()
+# conn.close()
+# print("Coluna adicionada com sucesso.")
 import sqlite3
+
 conn = sqlite3.connect('sistema_assinaturas.db')
 cursor = conn.cursor()
-cursor.execute("ALTER TABLE assinatura ADD COLUMN stripe_subscription_id TEXT;")
+cursor.execute("ALTER TABLE assinatura ADD COLUMN mercado_pago_id TEXT")
 conn.commit()
 conn.close()
-print("Coluna adicionada com sucesso.")
+print("✅ Coluna 'mercado_pago_id' adicionada com sucesso.")
