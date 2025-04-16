@@ -11,6 +11,7 @@ from datetime import datetime
 import mercadopago
 from datetime import datetime, timedelta
 
+
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
 
@@ -304,9 +305,9 @@ def criar_assinatura():
             "end_date": fim.strftime("%Y-%m-%dT%H:%M:%S.000-03:00"),
             "repetitions": 12
         },
-        "back_url":"https://teste-login-0hdz.onrender.com/assinatura-concluida",  # ngrok ou render
+        "back_url":"https://3108-170-239-254-184.ngrok-free.app/assinatura-concluida",  # ngrok ou render
         "payer_email": session.get("email"),
-        "notification_url":"https://teste-login-0hdz.onrender.com/webhook-mercado-pago"  # importante
+        "notification_url":"https://3108-170-239-254-184.ngrok-free.app/webhook-mercado-pago"  # importante
     }
 
     response = requests.post(url, headers=headers, json=body)
@@ -315,7 +316,7 @@ def criar_assinatura():
         assinatura = response.json()
         return redirect(assinatura["init_point"])
     else:
-        print("🔴 Erro na requisição:", response.text)
+        print("🔴 Erro Mercado Pago:", response.status_code, response.text)
         return f"Erro: {response.text}", 400
 
     

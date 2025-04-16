@@ -361,17 +361,3 @@ function deleteConversation(conversationId) {
 console.log("final ID do usuário logado:", userId);
 
 
-document.getElementById('btnAssinar').addEventListener('click', function () {
-    fetch('/create-checkout-session', {
-      method: 'POST',
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.url) {
-        window.location.href = data.url; // Redireciona para o Stripe
-      } else {
-        alert("Erro ao criar a sessão de pagamento");
-      }
-    })
-    .catch(err => console.error(err));
-  });
