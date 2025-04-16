@@ -280,6 +280,9 @@ def carregar_conversas_usuario():
 
 @app.route('/criar-assinatura', methods=['POST'])
 def criar_assinatura():
+    if 'email' not in session:
+        return "Você precisa estar logado para assinar."
+
     url = "https://api.mercadopago.com/preapproval"
 
     headers = {
@@ -287,19 +290,23 @@ def criar_assinatura():
         "Content-Type": "application/json"
     }
 
+    agora = datetime.now()
+    fim = agora + timedelta(days=365)
+
     body = {
         "reason": "Assinatura mensal Clique Pedagógico",
         "auto_recurring": {
             "frequency": 1,
             "frequency_type": "months",
-            "transaction_amount": 19.9,
+            "transaction_amount": 0.5,  # valor simbólico
             "currency_id": "BRL",
-            "start_date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S.000-03:00"),
-            "end_date": (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%S.000-03:00")
+            "start_date": agora.strftime("%Y-%m-%dT%H:%M:%S.000-03:00"),
+            "end_date": fim.strftime("%Y-%m-%dT%H:%M:%S.000-03:00"),
+            "repetitions": 12
         },
-        "back_url":"https://teste-login-0hdz.onrender.com/assinatura-concluida",
-        "payer_email": session.get("email")
-
+        "back_url": "https://SEU_DOMINIO.com.br/assinatura-concluida",  # ngrok ou render
+        "payer_email": session.get("email"),
+        "notification_url": "https://SEU_DOMINIO.com.br/webhook-mercado-pago"  # importante
     }
 
     response = requests.post(url, headers=headers, json=body)
@@ -308,7 +315,9 @@ def criar_assinatura():
         assinatura = response.json()
         return redirect(assinatura["init_point"])
     else:
-        return f"Erro: {response.text}"
+        print("🔴 Erro na requisição:", response.text)
+        return f"Erro: {response.text}", 400
+
     
 @app.route('/webhook-mercado-pago', methods=['POST'])
 def webhook_mercado_pago():
