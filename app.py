@@ -304,9 +304,9 @@ def criar_assinatura():
             "end_date": fim.strftime("%Y-%m-%dT%H:%M:%S.000-03:00"),
             "repetitions": 12
         },
-        "back_url": "https://SEU_DOMINIO.com.br/assinatura-concluida",  # ngrok ou render
+        "back_url":"https://teste-login-0hdz.onrender.com/assinatura-concluida",  # ngrok ou render
         "payer_email": session.get("email"),
-        "notification_url": "https://SEU_DOMINIO.com.br/webhook-mercado-pago"  # importante
+        "notification_url":"https://teste-login-0hdz.onrender.com/webhook-mercado-pago"  # importante
     }
 
     response = requests.post(url, headers=headers, json=body)
