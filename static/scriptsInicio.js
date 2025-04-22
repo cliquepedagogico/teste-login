@@ -357,7 +357,26 @@ function deleteConversation(conversationId) {
     })
     .catch(error => console.error('Erro ao excluir a conversa:', error));
 }
+const stripe = Stripe("pk_live_51RDspaFpRYJ4Ld4UV4q9l3ysip6y0lfdjTB9th9zjjspQ1d8fYhObRrcw5RruFaTE1aO6Ohgs9tOuRGhfx6TAkuG00hlX9cJcg");
 
-console.log("final ID do usuário logado:", userId);
-
-
+document.getElementById("btnAssinar").addEventListener("click", () => {
+  fetch("/create-checkout-session", {
+    method: "POST"
+  })
+  .then(res => {
+    if (res.status === 403) {
+      alert("Você precisa estar logado para assinar.");
+      return;
+    }
+    return res.json();
+  })
+  .then(data => {
+    if (data?.url) {
+      window.location.href = data.url;
+    }
+  })
+  .catch(err => {
+    console.error("Erro:", err);
+    alert("Ocorreu um erro ao iniciar a assinatura.");
+  });
+});

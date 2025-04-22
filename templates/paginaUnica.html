@@ -6,9 +6,10 @@
   <title>Assistente Pedagógica</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="{{ url_for('static', filename='stylesInicio.css') }}" rel="stylesheet">
+  <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
-  <script src="https://sdk.mercadopago.com/js/v2"></script>
+ 
 
 
   <!-- BLOCO: CONTEÚDO INICIAL (antes do login) -->
@@ -24,14 +25,12 @@
         <div class="produto">
           <h3>Assinatura Mensal</h3>
           <p>Renovação mensal</p>
-          <form action="/criar-assinatura" method="POST">
-            <button type="submit">Assinar Agora</button>
+          <button id="btnAssinar">Assinar agora</button>        
         </div>
 
         <div class="produto">
           <h3>Assinatura Anual</h3>
           <p>Renovação Anual</p>
-          <a href="/cadastrar"><button class="assinar">Assinar</button></a>
         </div>
       </div>
     </div>
@@ -78,13 +77,6 @@
   <script>
     const userId = "{{ user_id }}";
     console.log("ID do usuário logado:", userId);
-  </script>
-
-  <script src="https://sdk.mercadopago.com/js/v2">
- 
-   const mp = new MercadoPago("APP_USR-3f50c73d-2153-4701-89ab-6d6433d4b19d", {
-   locale: "pt-BR",
-  });
   </script>
   <script src="{{ url_for('static', filename='scriptsInicio.js') }}"></script>
 

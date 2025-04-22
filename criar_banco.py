@@ -65,11 +65,30 @@
 # conn.commit()
 # conn.close()
 # print("Coluna adicionada com sucesso.")
+# import sqlite3
+
+# conn = sqlite3.connect('sistema_assinaturas.db')
+# cursor = conn.cursor()
+# cursor.execute("ALTER TABLE assinatura ADD COLUMN mercado_pago_id TEXT")
+# conn.commit()
+# conn.close()
+# print("✅ Coluna 'mercado_pago_id' adicionada com sucesso.")
+
+
 import sqlite3
 
+# Conecta ao banco de dados
 conn = sqlite3.connect('sistema_assinaturas.db')
 cursor = conn.cursor()
-cursor.execute("ALTER TABLE assinatura ADD COLUMN mercado_pago_id TEXT")
+
+# Deleta todos os usuários cujo status não seja 'ativa'
+cursor.execute("""
+    DELETE FROM assinatura
+    WHERE status IS NULL OR status != 'ativa'
+""")
+
+# Confirma a exclusão
 conn.commit()
 conn.close()
-print("✅ Coluna 'mercado_pago_id' adicionada com sucesso.")
+
+print("🗑️ Usuários com status diferente de 'ativa' foram removidos com sucesso.")
