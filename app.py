@@ -49,7 +49,7 @@ def verificar_assinatura_por_email(email):
     """, (email,))
     resultado = cursor.fetchone()
     conn.close()
-    return resultado and resultado[0] == 'authorized'
+    return resultado and resultado[0] == 'ativa'
 
 # Cadastro
 @app.route('/cadastrar', methods=['GET', 'POST'])
@@ -295,8 +295,8 @@ def create_checkout_session():
                 'quantity': 1
             }],
             customer_email=session['email'],  # opcional: pré-preenche o e-mail
-            success_url='http://127.0.0.1:5000/sucesso?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url='http://127.0.0.1:5000',
+            success_url='https://teste-login-0hdz.onrender.com',
+            cancel_url='https://teste-login-0hdz.onrender.com/cancelado',
         )
         return jsonify({'url': session_stripe.url})
     except Exception as e:
@@ -338,6 +338,10 @@ def cancelar_assinatura():
 @app.route('/webhook', methods=['POST'])
 def stripe_webhook():
     import sqlite3
+    import stripe
+    import os
+    from flask import request, jsonify
+
     payload = request.data
     sig_header = request.headers.get('Stripe-Signature')
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
@@ -345,28 +349,49 @@ def stripe_webhook():
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except stripe.error.SignatureVerificationError:
-        print("❌ Assinatura do webhook inválida")
-        return 'Unauthorized', 400
+        print("❌ Webhook com assinatura inválida")
+        return 'Assinatura inválida', 400
 
-    # ✅ Verifica se o evento é de finalização do checkout
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        email = session.get('customer_email')
         subscription_id = session.get('subscription')
+        customer_id = session.get('customer')
 
-        print(f"✅ Assinatura confirmada: {email} | ID: {subscription_id}")
+        try:
+            customer = stripe.Customer.retrieve(customer_id)
+            email = customer.get('email')
 
-        # Salvar no banco de dados
-        conn = sqlite3.connect('sistema_assinaturas.db')
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT OR REPLACE INTO assinatura (email, stripe_subscription_id, status, data_inicio)
-            VALUES (?, ?, ?, datetime('now'))
-        """, (email, subscription_id, 'ativa'))
-        conn.commit()
-        conn.close()
+            conn = sqlite3.connect("sistema_assinaturas.db")
+            cursor = conn.cursor()
 
-    return jsonify({'status': 'recebido'}), 200
+            # Verifica se já existe um usuário com esse e-mail
+            cursor.execute("SELECT id FROM assinatura WHERE email = ?", (email,))
+            usuario = cursor.fetchone()
+
+            if usuario:
+                # Atualiza assinatura existente
+                cursor.execute("""
+                    UPDATE assinatura
+                    SET stripe_subscription_id = ?, status = ?, data_inicio = datetime('now')
+                    WHERE email = ?
+                """, (subscription_id, 'ativa', email))
+                print(f"🔁 Atualizado: {email}")
+            else:
+                # Cria novo caso não exista
+                cursor.execute("""
+                    INSERT INTO assinatura (email, stripe_subscription_id, status, data_inicio)
+                    VALUES (?, ?, ?, datetime('now'))
+                """, (email, subscription_id, 'ativa'))
+                print(f"🆕 Criado novo: {email}")
+
+            conn.commit()
+            conn.close()
+            print("✅ Assinatura salva com sucesso")
+
+        except Exception as e:
+            print("❌ Erro ao registrar assinatura:", str(e))
+
+    return jsonify({'status': 'ok'}), 200
 
 
 

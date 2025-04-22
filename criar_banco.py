@@ -75,20 +75,20 @@
 # print("✅ Coluna 'mercado_pago_id' adicionada com sucesso.")
 
 
-import sqlite3
+# import sqlite3
 
-# Conecta ao banco de dados
-conn = sqlite3.connect('sistema_assinaturas.db')
-cursor = conn.cursor()
+# # Conecta ao banco de dados
+# conn = sqlite3.connect('sistema_assinaturas.db')
+# cursor = conn.cursor()
 
-# Deleta todos os usuários cujo status não seja 'ativa'
-cursor.execute("""
-    DELETE FROM assinatura
-    WHERE status IS NULL OR status == 'ativa'
-""")
+# # Deleta todos os usuários cujo status não seja 'ativa'
+# cursor.execute("""
+#     DELETE FROM assinatura
+#     WHERE status IS NULL OR status == 'ativa'
+# """)
 
-# Confirma a exclusão
-conn.commit()
-conn.close()
+# # Confirma a exclusão
+# conn.commit()
+# conn.close()
 
-print("🗑️ Usuários com status diferente de 'ativa' foram removidos com sucesso.")
+# print("🗑️ Usuários com status diferente de 'ativa' foram removidos com sucesso.")
