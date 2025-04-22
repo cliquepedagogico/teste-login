@@ -80,6 +80,12 @@
     console.log("ID do usuário logado:", userId);
   </script>
 
+  <script src="https://sdk.mercadopago.com/js/v2">
+ 
+   const mp = new MercadoPago("APP_USR-3f50c73d-2153-4701-89ab-6d6433d4b19d", {
+   locale: "pt-BR",
+  });
+  </script>
   <script src="{{ url_for('static', filename='scriptsInicio.js') }}"></script>
 
 </body>
