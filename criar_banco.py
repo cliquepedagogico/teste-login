@@ -84,7 +84,7 @@ cursor = conn.cursor()
 # Deleta todos os usuários cujo status não seja 'ativa'
 cursor.execute("""
     DELETE FROM assinatura
-    WHERE status IS NULL OR status != 'ativa'
+    WHERE status IS NULL OR status == 'ativa'
 """)
 
 # Confirma a exclusão
