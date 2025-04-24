@@ -4,7 +4,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 # Configuração de conexão
 DB_URI = "mysql+pymysql://u579582402_adminChatFlask:Xu0LFxW^3@cliquepedagogico.com.br/u579582402_HistoricoChat"
 
-engine = create_engine(DB_URI)
+engine = create_engine(DB_URI, pool_pre_ping=True)
 Session = sessionmaker(bind=engine)
 session = Session()
 
