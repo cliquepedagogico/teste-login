@@ -153,13 +153,16 @@ function updateConversationHistory() {
 }
 
 function loadConversation(index) {
-    let conversationId = conversations[index].id;
+    let conversationId = conversations[index].id;  // já corrigido para .id
     selectedConversationId = conversationId;
 
     fetch('/carregar_mensagem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversa_id: conversationId })
+        body: JSON.stringify({
+            conversa_id: conversationId,
+            user_id: userId  // <- aqui é o que faltava
+        })
     })
     .then(response => response.json())
     .then(data => {
@@ -174,15 +177,10 @@ function loadConversation(index) {
                     <div class="${messageClass}">
                         <img src="${entry.mensagem}" alt="Imagem gerada" style="max-width: 60%; border-radius: 10px;">
                     </div>`;
-            } else if (entry.remetente === 'vix') {
-                document.getElementById('chat-box').innerHTML += `
-                    <div class="${messageClass}">
-                        <p><strong>${senderName}</strong> ${entry.mensagem}</p>
-                    </div>`;
             } else {
                 document.getElementById('chat-box').innerHTML += `
                     <div class="${messageClass}">
-                        <p>${entry.mensagem}</p>
+                        <p><strong>${senderName}</strong> ${entry.mensagem}</p>
                     </div>`;
             }
         });
@@ -191,12 +189,13 @@ function loadConversation(index) {
             role: entry.remetente === 'user' ? 'user' : 'assistant',
             content: entry.mensagem
         }));
-        conversationStarted = true;
 
+        conversationStarted = true;
         scrollToBottom();
     })
     .catch(error => console.error('Erro ao carregar o histórico da conversa:', error));
 }
+
 
 function checkEnter(event) {
     if (event.key === "Enter") {
