@@ -2,8 +2,11 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from flask_sqlalchemy import SQLAlchemy
 import os
 import stripe
+import mercadopago
+from db_assinatura import Assinatura 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 import openai
-import sqlite3
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from db_funcoes import Conversa, registrar_conversa, salvar_mensagem, carregar_conversas_ordenadas, carregar_mensagem, renomear_conversa, excluir_conversa
@@ -24,7 +27,8 @@ app.secret_key = 'chave_secreta'
 # Carrega variáveis do .env
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+# stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_TOKEN"))
 
 # Banco de dados MySQL remoto para conversas
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DB_URI')
@@ -35,6 +39,8 @@ db = SQLAlchemy(app)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATABASE_PATH = os.path.join(BASE_DIR, 'sistema_assinaturas.db')
 
+agora = datetime.now()
+fim = agora + timedelta(days=365)
 # ======== ROTAS DO SISTEMA DE ASSINATURA ========
 
 @app.route('/cadastrar', methods=['GET', 'POST'])
@@ -185,28 +191,36 @@ def excluir_conversa_view():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ======== ASSINATURA - Stripe ========
+@app.route('/criar-assinatura', methods=['GET', 'POST'])
+def criar_assinatura():
+    if 'email' not in session:
+        return "Você precisa estar logado para assinar."
 
-# @app.route('/create-checkout-session', methods=['POST'])
-# def create_checkout_session():
-#     if 'email' not in session:
-#         return jsonify({'error': 'Você precisa estar logado para assinar.'}), 403
+    # Dados para criar a assinatura
+    preference_data = {
+        "reason": "Assinatura mensal do Clique Pedagógico",
+        "auto_recurring": {
+            "frequency": 1,
+            "frequency_type": "months",
+            "transaction_amount": 4.50,  # valor da assinatura
+            "currency_id": "BRL",
+            "start_date": agora.strftime("%Y-%m-%dT%H:%M:%S.000-03:00"),  # ajuste a data se quiser
+            "end_date": fim.strftime("%Y-%m-%dT%H:%M:%S.000-03:00")
+        },
+        "back_url": "https://teste-login-0hdz.onrender.com",  # para onde o usuário será enviado após assinar
+        "payer_email": session['email']  # Email do usuário que está logado
+    }
 
-#     try:
-#         session_stripe = stripe.checkout.Session.create(
-#             payment_method_types=['card'],
-#             mode='subscription',
-#             line_items=[{
-#                 'price': os.getenv('STRIPE_PRICE_ID'),
-#                 'quantity': 1
-#             }],
-#             customer_email=session['email'],
-#             success_url='https://teste-login-0hdz.onrender.com',
-#             cancel_url='https://teste-login-0hdz.onrender.com/cancelado',
-#         )
-#         return jsonify({'url': session_stripe.url})
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 400
+    # Cria a assinatura
+    preapproval_response = sdk.preapproval().create(preference_data)
+    
+    if preapproval_response["status"] == 201:
+        # Redireciona o usuário para aprovar a assinatura
+        init_point = preapproval_response["response"]["init_point"]
+        return redirect(init_point)
+    else:
+        # Deu erro
+        return f"Erro ao criar assinatura: {preapproval_response}"
 
 @app.route('/cancelar-assinatura', methods=['POST'])
 def cancelar_assinatura():
@@ -220,30 +234,54 @@ def cancelar_assinatura():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-# @app.route('/webhook', methods=['POST'])
-# def stripe_webhook():
-#     payload = request.data
-#     sig_header = request.headers.get('Stripe-Signature')
-#     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+@app.route('/webhook', methods=['POST'])
+def mercado_pago_webhook():
+    data = request.get_json()
+    print("📨 Webhook recebido:", data)
 
-#     try:
-#         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-#     except stripe.error.SignatureVerificationError:
-#         return 'Assinatura inválida', 400
+    # Verifica se é evento de assinatura (preapproval)
+    if data.get('type') == 'subscription_preapproval':
+        try:
+            preapproval_id = data['data']['id']
 
-#     if event['type'] == 'checkout.session.completed':
-#         session_data = event['data']['object']
-#         subscription_id = session_data.get('subscription')
-#         customer_id = session_data.get('customer')
-#         try:
-#             email = stripe.Customer.retrieve(customer_id).get('email')
-#             atualizar_ou_criar_assinatura(email, subscription_id)
-#         except Exception as e:
-#             print("Erro ao registrar assinatura:", str(e))
+            # Buscar os detalhes da assinatura diretamente do Mercado Pago
+            preapproval_info = sdk.preapproval().get(preapproval_id)
 
-#     return jsonify({'status': 'ok'}), 200
+            if preapproval_info['status'] == 200:
+                assinatura = preapproval_info['response']
+                email = assinatura.get('payer_email')
+                status_assinatura = assinatura.get('status')  # authorized, paused, cancelled
+                subscription_id = assinatura.get('id')
 
-# # ======== EXECUÇÃO ========
+                if email and subscription_id:
+                    atualizar_ou_criar_assinatura(email, subscription_id, status_assinatura)
+
+        except Exception as e:
+            print("Erro ao processar webhook do Mercado Pago:", str(e))
+
+    return jsonify({'status': 'ok'}), 200
+
+def atualizar_ou_criar_assinatura(email, subscription_id, status_assinatura):
+    session = Session()
+    assinatura = session.query(Assinatura).filter_by(email=email).first()
+
+    if assinatura:
+        assinatura.stripe_subscription_id = subscription_id  # Aproveitando o mesmo campo existente
+        assinatura.status = status_assinatura
+        assinatura.data_inicio = datetime.now()
+    else:
+        assinatura = Assinatura(
+            email=email,
+            stripe_subscription_id=subscription_id,
+            status=status_assinatura,
+            data_inicio=datetime.now()
+        )
+        session.add(assinatura)
+
+    session.commit()
+    session.close()
+    print(f"✅ Assinatura registrada/atualizada para {email} com status {status_assinatura}")
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -5,8 +5,8 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-DB_URI = os.getenv("ASSINATURA_DB_URI")
-engine = create_engine(DB_URI, pool_pre_ping=True)
+ASS = os.getenv("ASSINATURA_DB_URI")
+engine = create_engine(ASS, pool_pre_ping=True)
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
@@ -81,18 +81,18 @@ def cancelar_assinatura_por_email(email):
         session.commit()
     session.close()
 
-def atualizar_ou_criar_assinatura(email, subscription_id):
+def atualizar_ou_criar_assinatura(email, subscription_id, status_assinatura):
     session = Session()
     assinatura = session.query(Assinatura).filter_by(email=email).first()
     if assinatura:
-        assinatura.stripe_subscription_id = subscription_id
-        assinatura.status = 'ativa'
+        assinatura.stripe_subscription_id = subscription_id  # usando o mesmo campo para MP
+        assinatura.status = status_assinatura
         assinatura.data_inicio = datetime.now()
     else:
         assinatura = Assinatura(
             email=email,
             stripe_subscription_id=subscription_id,
-            status='ativa',
+            status=status_assinatura,
             data_inicio=datetime.now()
         )
         session.add(assinatura)
