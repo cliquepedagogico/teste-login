@@ -10,6 +10,8 @@ engine = create_engine(ASS, pool_pre_ping=True)
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
+
+
 class Assinatura(Base):
     __tablename__ = 'assinatura'
     id = Column(Integer, primary_key=True)
@@ -46,7 +48,7 @@ def cadastrar_assinatura(username, email, senha, telefone, cpf, data_nascimento)
 
     nova = Assinatura(
         username=username,
-        email=email,
+        email=email.lower(),
         senha=senha,
         telefone=telefone,
         cpf=cpf,

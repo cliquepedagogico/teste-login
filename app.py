@@ -234,32 +234,50 @@ def cancelar_assinatura():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+def mapear_status(status_mercado_pago):
+    if status_mercado_pago == 'authorized':
+        return 'ativa'
+    elif status_mercado_pago == 'paused':
+        return 'pausada'
+    else:
+        return 'inativa'
+
+
+def mapear_status(status_mercado_pago):
+    if status_mercado_pago == 'authorized':
+        return 'ativa'
+    elif status_mercado_pago == 'paused':
+        return 'pausada'
+    else:
+        return 'inativa'
+
 @app.route('/webhook', methods=['POST'])
 def mercado_pago_webhook():
     data = request.get_json()
     print("📨 Webhook recebido:", data)
 
-    # Verifica se é evento de assinatura (preapproval)
     if data.get('type') == 'subscription_preapproval':
         try:
             preapproval_id = data['data']['id']
-
-            # Buscar os detalhes da assinatura diretamente do Mercado Pago
             preapproval_info = sdk.preapproval().get(preapproval_id)
 
             if preapproval_info['status'] == 200:
                 assinatura = preapproval_info['response']
                 email = assinatura.get('payer_email')
-                status_assinatura = assinatura.get('status')  # authorized, paused, cancelled
+                status_assinatura = assinatura.get('status')
                 subscription_id = assinatura.get('id')
 
                 if email and subscription_id:
-                    atualizar_ou_criar_assinatura(email, subscription_id, status_assinatura)
+                    email = email.lower()
+                    status_convertido = mapear_status(status_assinatura)
+                    print(f"➡️ Email: {email}, Status original: {status_assinatura}, Status convertido: {status_convertido}")
+                    atualizar_ou_criar_assinatura(email, subscription_id, status_convertido)
 
         except Exception as e:
             print("Erro ao processar webhook do Mercado Pago:", str(e))
 
     return jsonify({'status': 'ok'}), 200
+
 
 def atualizar_ou_criar_assinatura(email, subscription_id, status_assinatura):
     session = Session()
@@ -281,6 +299,11 @@ def atualizar_ou_criar_assinatura(email, subscription_id, status_assinatura):
     session.commit()
     session.close()
     print(f"✅ Assinatura registrada/atualizada para {email} com status {status_assinatura}")
+
+    print("➡️ EMAIL recebido no webhook:", email)
+    print("➡️ STATUS recebido:", status_assinatura)
+    print("➡️ ID da assinatura:", subscription_id)
+
 
 
 if __name__ == '__main__':
