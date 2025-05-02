@@ -82,21 +82,39 @@ def cancelar_assinatura_por_email(email):
         assinatura.data_expiracao = datetime.now()
         session.commit()
     session.close()
-
-def atualizar_ou_criar_assinatura(email, subscription_id, status_assinatura):
+ 
+# ✅ NOVA FUNÇÃO: salvar preapproval_id na linha do usuário
+def salvar_preapproval_id(user_id, preapproval_id):
     session = Session()
-    assinatura = session.query(Assinatura).filter_by(email=email).first()
-    if assinatura:
-        assinatura.stripe_subscription_id = subscription_id  # usando o mesmo campo para MP
-        assinatura.status = status_assinatura
-        assinatura.data_inicio = datetime.now()
-    else:
-        assinatura = Assinatura(
-            email=email,
-            stripe_subscription_id=subscription_id,
-            status=status_assinatura,
-            data_inicio=datetime.now()
-        )
-        session.add(assinatura)
-    session.commit()
-    session.close()
+    try:
+        assinatura = session.query(Assinatura).filter_by(id=user_id).first()
+        if assinatura:
+            assinatura.stripe_subscription_id = preapproval_id
+            session.commit()
+            print(f"✅ preapproval_id salvo com sucesso para o user_id {user_id}")
+        else:
+            print(f"❌ Usuário com ID {user_id} não encontrado para salvar o preapproval_id.")
+    except Exception as e:
+        session.rollback()
+        print(f"❌ Erro ao salvar preapproval_id: {str(e)}")
+    finally:
+        session.close()
+
+# ✅ NOVA FUNÇÃO: atualizar a assinatura via subscription_id (webhook)
+def atualizar_assinatura_por_subscription_id(subscription_id, status_assinatura):
+    session = Session()
+    try:
+        assinatura = session.query(Assinatura).filter_by(stripe_subscription_id=subscription_id).first()
+        if assinatura:
+            assinatura.status = status_assinatura
+            assinatura.data_inicio = datetime.now()
+            session.commit()
+            print(f"🔁 Assinatura atualizada via webhook para {assinatura.email} (subscription_id={subscription_id})")
+        else:
+            print(f"⚠️ Nenhuma assinatura encontrada com subscription_id {subscription_id}")
+
+    except Exception as e:
+        session.rollback()
+        print(f"❌ Erro ao atualizar assinatura via webhook: {str(e)}")
+    finally:
+        session.close()

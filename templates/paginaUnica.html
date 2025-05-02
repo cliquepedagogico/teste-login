@@ -25,7 +25,13 @@
         <div class="produto">
           <h3>Assinatura Mensal</h3>
           <p>Renovação mensal</p>
-          <button id="btnAssinar">Assinar agora</button>        
+          <a href="/criar-assinatura">
+            <button>Assinar agora</button>
+          </a>               
+          <a href="/cancelar-assinatura-direto">
+            <button>Cancelar assinatura</button>
+          </a>
+            
         </div>
 
         <div class="produto">
@@ -61,6 +67,10 @@
       <div style="margin-top: 20px; text-align: center;">
         <a href="/logout" class="btn btn-danger">Sair</a>
       </div>
+      <div style="margin-top: 20px; text-align: center;">
+        <a href="/cancelar-assinatura-direto" class="btn btn-danger">cancelar Assinatura</a>
+      </div>
+    
     </div>
 
     <button id="toggle-sidebar" onclick="toggleSidebar()">⬅</button>

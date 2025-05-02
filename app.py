@@ -17,7 +17,7 @@ from db_assinatura import (
     login_usuario,
     buscar_email_por_id,
     cancelar_assinatura_por_email,
-    atualizar_ou_criar_assinatura
+    atualizar_assinatura_por_subscription_id
 )
 
 # Inicializa o Flask
@@ -27,8 +27,11 @@ app.secret_key = 'chave_secreta'
 # Carrega variáveis do .env
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
-# stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_TOKEN"))
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
+YOUR_DOMAIN = "https://teste-login-0hdz.onrender.com"
+# sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_TOKEN"))
 
 # Banco de dados MySQL remoto para conversas
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DB_URI')
@@ -183,128 +186,271 @@ def carregar_mensagem_view():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/excluir_conversa', methods=['POST'])
-def excluir_conversa_view():
-    try:
-        excluir_conversa(request.json.get('conversa_id'))
-        return jsonify({"status": "Conversa excluída"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
-@app.route('/criar-assinatura', methods=['GET', 'POST'])
+
+@app.route('/criar-assinatura')
 def criar_assinatura():
-    if 'email' not in session:
-        return "Você precisa estar logado para assinar."
+    if 'user_id' not in session:
+        return "Usuário não logado."
 
-    # Dados para criar a assinatura
-    preference_data = {
-        "reason": "Assinatura mensal do Clique Pedagógico",
-        "auto_recurring": {
-            "frequency": 1,
-            "frequency_type": "months",
-            "transaction_amount": 4.50,  # valor da assinatura
-            "currency_id": "BRL",
-            "start_date": agora.strftime("%Y-%m-%dT%H:%M:%S.000-03:00"),  # ajuste a data se quiser
-            "end_date": fim.strftime("%Y-%m-%dT%H:%M:%S.000-03:00")
-        },
-        "back_url": "https://teste-login-0hdz.onrender.com",  # para onde o usuário será enviado após assinar
-        "payer_email": session['email']  # Email do usuário que está logado
-    }
+    user_id = session['user_id']
+    email = buscar_email_por_id(user_id)
 
-    # Cria a assinatura
-    preapproval_response = sdk.preapproval().create(preference_data)
-    
-    if preapproval_response["status"] == 201:
-        # Redireciona o usuário para aprovar a assinatura
-        init_point = preapproval_response["response"]["init_point"]
-        return redirect(init_point)
-    else:
-        # Deu erro
-        return f"Erro ao criar assinatura: {preapproval_response}"
-
-@app.route('/cancelar-assinatura', methods=['POST'])
-def cancelar_assinatura():
-    if 'email' not in session:
-        return jsonify({'error': 'Usuário não autenticado'}), 403
+    if not email:
+        return "E-mail não encontrado para o usuário logado."
 
     try:
-        stripe.Subscription.delete(session.get("stripe_subscription_id", ""))
-        cancelar_assinatura_por_email(session['email'])
-        return jsonify({'message': 'Assinatura cancelada com sucesso'}), 200
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=email,
+            payment_method_types=["card"],
+            line_items=[{
+                'price': STRIPE_PRICE_ID,
+                'quantity': 1
+            }],
+            mode='subscription',
+            success_url=f"{YOUR_DOMAIN}/?status=sucesso",
+            cancel_url=f"{YOUR_DOMAIN}/?status=cancelado"
+        )
+        return redirect(checkout_session.url)
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-def mapear_status(status_mercado_pago):
-    if status_mercado_pago == 'authorized':
-        return 'ativa'
-    elif status_mercado_pago == 'paused':
-        return 'pausada'
-    else:
-        return 'inativa'
-
-
-def mapear_status(status_mercado_pago):
-    if status_mercado_pago == 'authorized':
-        return 'ativa'
-    elif status_mercado_pago == 'paused':
-        return 'pausada'
-    else:
-        return 'inativa'
+        print("❌ Erro ao criar checkout com Stripe:", str(e))
+        return "❌ Falha técnica ao criar assinatura"
 
 @app.route('/webhook', methods=['POST'])
-def mercado_pago_webhook():
-    data = request.get_json()
-    print("📨 Webhook recebido:", data)
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
 
-    if data.get('type') == 'subscription_preapproval':
-        try:
-            preapproval_id = data['data']['id']
-            preapproval_info = sdk.preapproval().get(preapproval_id)
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except stripe.error.SignatureVerificationError:
+        print("❌ Assinatura inválida no webhook.")
+        return "Assinatura inválida", 400
+    except Exception as e:
+        print("❌ Erro geral no webhook:", str(e))
+        return "Erro", 400
 
-            if preapproval_info['status'] == 200:
-                assinatura = preapproval_info['response']
-                email = assinatura.get('payer_email')
-                status_assinatura = assinatura.get('status')
-                subscription_id = assinatura.get('id')
+    event_type = event.get('type')
+    data_object = event['data']['object']
 
-                if email and subscription_id:
-                    email = email.lower()
-                    status_convertido = mapear_status(status_assinatura)
-                    print(f"➡️ Email: {email}, Status original: {status_assinatura}, Status convertido: {status_convertido}")
-                    atualizar_ou_criar_assinatura(email, subscription_id, status_convertido)
+    if event_type == 'checkout.session.completed':
+        subscription_id = data_object.get('subscription')
+        customer_email = data_object.get('customer_email')
 
-        except Exception as e:
-            print("Erro ao processar webhook do Mercado Pago:", str(e))
+        if subscription_id and customer_email:
+            atualizar_ou_criar_assinatura(customer_email, subscription_id, 'ativa')
+
+    elif event_type == 'customer.subscription.deleted':
+        subscription_id = data_object.get('id')
+        if subscription_id:
+            desativar_assinatura(subscription_id)
 
     return jsonify({'status': 'ok'}), 200
 
+def buscar_email_por_id(user_id):
+    session = Session()
+    try:
+        assinatura = session.query(Assinatura).filter_by(id=user_id).first()
+        return assinatura.email if assinatura else None
+    finally:
+        session.close()
 
 def atualizar_ou_criar_assinatura(email, subscription_id, status_assinatura):
     session = Session()
-    assinatura = session.query(Assinatura).filter_by(email=email).first()
+    try:
+        assinatura = session.query(Assinatura).filter_by(email=email).first()
+        if assinatura:
+            assinatura.stripe_subscription_id = subscription_id
+            assinatura.status = status_assinatura
+            assinatura.data_inicio = datetime.now()
+            session.commit()
+            print(f"✅ Assinatura salva/atualizada para {email}")
+        else:
+            print(f"⚠️ E-mail {email} não encontrado para salvar assinatura.")
+    except Exception as e:
+        session.rollback()
+        print(f"❌ Erro ao salvar assinatura: {str(e)}")
+    finally:
+        session.close()
 
-    if assinatura:
-        assinatura.stripe_subscription_id = subscription_id  # Aproveitando o mesmo campo existente
-        assinatura.status = status_assinatura
-        assinatura.data_inicio = datetime.now()
-    else:
-        assinatura = Assinatura(
-            email=email,
-            stripe_subscription_id=subscription_id,
-            status=status_assinatura,
-            data_inicio=datetime.now()
-        )
-        session.add(assinatura)
+@app.route('/cancelar-assinatura-direto')
+def cancelar_assinatura_direto():
+    if 'user_id' not in session:
+        return "Usuário não logado."
 
-    session.commit()
-    session.close()
-    print(f"✅ Assinatura registrada/atualizada para {email} com status {status_assinatura}")
+    session_db = Session()
+    try:
+        user_id = session['user_id']
+        assinatura = session_db.query(Assinatura).filter_by(id=user_id).first()
 
-    print("➡️ EMAIL recebido no webhook:", email)
-    print("➡️ STATUS recebido:", status_assinatura)
-    print("➡️ ID da assinatura:", subscription_id)
+        if assinatura and assinatura.stripe_subscription_id:
+            desativar_assinatura(assinatura.stripe_subscription_id)
+            return redirect('/?status=assinatura_cancelada')
+        else:
+            return "Assinatura não encontrada para este usuário."
+    except Exception as e:
+        print(f"❌ Erro ao cancelar assinatura direto: {str(e)}")
+        return "Erro interno ao cancelar assinatura"
+    finally:
+        session_db.close()
 
 
+def desativar_assinatura(subscription_id):
+    session = Session()
+    try:
+        assinatura = session.query(Assinatura).filter_by(stripe_subscription_id=subscription_id).first()
+        if assinatura:
+            assinatura.status = 'cancelada'
+            assinatura.data_expiracao = datetime.now()
+            session.commit()
+            print(f"❌ Assinatura cancelada para {assinatura.email}")
+        else:
+            print(f"⚠️ Nenhuma assinatura encontrada com ID {subscription_id}")
+    except Exception as e:
+        session.rollback()
+        print(f"❌ Erro ao cancelar assinatura: {str(e)}")
+    finally:
+        session.close()
+
+# @app.route('/criar-assinatura')
+# def criar_assinatura():
+#     if 'user_id' not in session:
+#         return "Usuário não logado."
+
+#     user_id = session['user_id']
+#     email = buscar_email_por_id(user_id)
+
+#     if not email:
+#         return "E-mail não encontrado para o usuário logado."
+
+#     preference_data = {
+#         "reason": "Assinatura mensal do Clique Pedagógico",
+#         "auto_recurring": {
+#             "frequency": 1,
+#             "frequency_type": "months",
+#             "transaction_amount": 5.5,
+#             "currency_id": "BRL",
+#             "start_date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S.000-03:00"),
+#             "end_date": (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%S.000-03:00")
+#         },
+#         "back_url": "https://9845-170-239-253-133.ngrok-free.app",
+#         "payer_email": email
+#     }
+
+#     try:
+#         preapproval_response = sdk.preapproval().create(preference_data)
+#         if preapproval_response["status"] == 201:
+#             init_point = preapproval_response["response"]["init_point"]
+#             # 🔁 NÃO SALVA NADA AQUI
+#             return redirect(init_point)
+#         else:
+#             print("❌ Erro ao criar assinatura:", preapproval_response)
+#             return "❌ Erro ao criar assinatura"
+#     except Exception as e:
+#         print("❌ Exceção ao criar assinatura:", str(e))
+#         return "❌ Falha técnica ao criar assinatura"
+
+    
+# def verificar_preapproval_existente(user_id):
+#     session = Session()
+#     try:
+#         assinatura = session.query(Assinatura).filter_by(id=user_id).first()
+#         return bool(assinatura and assinatura.stripe_subscription_id)
+#     finally:
+#         session.close()
+
+# @app.route('/webhook', methods=['POST'])
+# def mercado_pago_webhook():
+#     content_type = request.headers.get('Content-Type', '')
+#     if 'application/json' in content_type:
+#         data = request.get_json()
+#     elif 'application/x-www-form-urlencoded' in content_type:
+#         data = request.form.to_dict()
+#     else:
+#         return 'Tipo de conteúdo não suportado', 415
+
+#     print("📨 Webhook recebido:", data)
+
+#     if data.get('type') == 'subscription_preapproval':
+#         try:
+#             preapproval_id = data['data']['id']
+#             preapproval_info = sdk.preapproval().get(preapproval_id)
+
+#             if preapproval_info['status'] == 200:
+#                 assinatura = preapproval_info['response']
+#                 print("🧾 Conteúdo completo da assinatura:", assinatura)
+
+#                 status_assinatura = assinatura.get('status')
+#                 subscription_id = assinatura.get('id')
+
+#                 if subscription_id and status_assinatura:
+#                     status_convertido = mapear_status(status_assinatura)
+#                     atualizar_assinatura_por_subscription_id(subscription_id, status_convertido)
+#                 else:
+#                     print("⚠️ Dados incompletos. Assinatura não atualizada.")
+#             else:
+#                 print(f"❌ preapproval_id {preapproval_id} não retornou dados válidos.")
+
+#         except Exception as e:
+#             print("❌ Erro ao processar webhook do Mercado Pago:", str(e))
+
+#     return jsonify({'status': 'ok'}), 200
+
+# def buscar_email_por_id(user_id):
+#     session = Session()
+#     try:
+#         assinatura = session.query(Assinatura).filter_by(id=user_id).first()
+#         if assinatura:
+#             return assinatura.email
+#         else:
+#             print(f"⚠️ Nenhum registro encontrado com ID {user_id}")
+#             return None
+#     finally:
+#         session.close()
+
+# def salvar_preapproval_id(user_id, preapproval_id):
+#     session = Session()
+#     try:
+#         assinatura = session.query(Assinatura).filter_by(id=user_id).first()
+#         if assinatura:
+#             assinatura.stripe_subscription_id = preapproval_id  # sobrescreve normalmente
+#             session.commit()
+#             print(f"✅ preapproval_id atualizado para user_id {user_id}")
+#         else:
+#             print(f"❌ Usuário com ID {user_id} não encontrado.")
+#     except Exception as e:
+#         session.rollback()
+#         print(f"❌ Erro ao salvar preapproval_id: {str(e)}")
+#     finally:
+#         session.close()
+
+# def atualizar_assinatura_por_subscription_id(subscription_id, status_assinatura):
+#     session = Session()
+#     try:
+#         assinatura = session.query(Assinatura).filter_by(stripe_subscription_id=subscription_id).first()
+#         if assinatura:
+#             assinatura.status = status_assinatura
+#             assinatura.data_inicio = datetime.now()
+#             session.commit()
+#             print(f"🔁 Assinatura atualizada via webhook para {assinatura.email} (subscription_id={subscription_id})")
+#         else:
+#             print(f"⚠️ Nenhuma assinatura encontrada com subscription_id {subscription_id}")
+
+#     except Exception as e:
+#         session.rollback()
+#         print(f"❌ Erro ao atualizar assinatura via webhook: {str(e)}")
+#     finally:
+#         session.close()
+
+# def mapear_status(status_mercado_pago):
+#     if status_mercado_pago == 'authorized':
+#         return 'ativa'
+#     elif status_mercado_pago == 'paused':
+#         return 'pausada'
+#     elif status_mercado_pago == 'cancelled':
+#         return 'inativa'
+#     else:
+#         return 'inativa'
 
 if __name__ == '__main__':
     app.run(debug=True)
