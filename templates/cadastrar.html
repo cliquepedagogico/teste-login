@@ -9,7 +9,7 @@
   <div class="container mt-5">
     <h2 class="mb-4">Cadastro de Usuário</h2>
 
-    <form action="{{ url_for('cadastrar') }}" method="POST">
+    <form action="{{ url_for('auth.cadastrar') }}" method="POST">
       <div class="mb-3">
         <label for="username" class="form-label">Nome de Usuário</label>
         <input type="text" class="form-control" name="username" required>
