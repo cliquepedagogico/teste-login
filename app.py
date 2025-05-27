@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 import stripe
 import openai
 from datetime import datetime, timedelta
+from flask_mail import Mail
 
 # Blueprints das rotas
 from routes.auth_routes import auth
@@ -15,6 +16,8 @@ from config.config import Config
 # Inicializa Flask
 app = Flask(__name__)
 app.secret_key = Config.SECRET_KEY
+app.config.from_object(Config)
+mail = Mail(app)
 
 # Registra blueprints
 app.register_blueprint(auth)
@@ -39,6 +42,8 @@ YOUR_DOMAIN = Config.YOUR_DOMAIN
 # Apenas se precisar usar no futuro (ex.: relatórios)
 agora = datetime.now()
 fim = agora + timedelta(days=365)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

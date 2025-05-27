@@ -6,44 +6,195 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
-  <div class="container mt-5">
-    <h2 class="mb-4">Cadastro de Usuário</h2>
 
-    <form action="{{ url_for('auth.cadastrar') }}" method="POST">
-      <div class="mb-3">
-        <label for="username" class="form-label">Nome de Usuário</label>
-        <input type="text" class="form-control" name="username" required>
-      </div>
+<div class="container mt-5">
+  <h2 class="mb-4">Cadastro de Usuário</h2>
 
-      <div class="mb-3">
-        <label for="email" class="form-label">E-mail</label>
-        <input type="email" class="form-control" name="email" required>
-      </div>
+  <form action="{{ url_for('auth.cadastrar') }}" method="POST" id="cadastro-form">
+    <div class="mb-3">
+      <label for="username" class="form-label">Nome de Usuário</label>
+      <input type="text" class="form-control" name="username" id="username" required>
+      <div class="text-danger small" id="username-error"></div>
+    </div>
 
-      <div class="mb-3">
-        <label for="password" class="form-label">Senha</label>
-        <input type="password" class="form-control" name="password" required>
-      </div>
+    <div class="mb-3">
+      <label for="email" class="form-label">E-mail</label>
+      <input type="email" class="form-control" name="email" id="email" required>
+      <div class="text-danger small" id="email-error"></div>
+    </div>
 
-      <div class="mb-3">
-        <label for="telefone" class="form-label">Telefone</label>
-        <input type="text" class="form-control" name="telefone" placeholder="(00) 00000-0000" required>
-      </div>
+    <div class="mb-3">
+      <label for="password" class="form-label">Senha</label>
+      <input type="password" class="form-control" name="password" id="password" required>
+      <div class="text-danger small" id="password-error"></div>
+    </div>
 
-      <div class="mb-3">
-        <label for="cpf" class="form-label">CPF</label>
-        <input type="text" class="form-control" name="cpf" placeholder="000.000.000-00" required>
-      </div>
+    <div class="mb-3">
+      <label for="telefone" class="form-label">Telefone</label>
+      <input type="text" class="form-control" name="telefone" id="telefone" placeholder="(00) 00000-0000" required>
+      <div class="text-danger small" id="telefone-error"></div>
+    </div>
 
-      <div class="mb-3">
-        <label for="data_nascimento" class="form-label">Data de Nascimento</label>
-        <input type="date" class="form-control" name="data_nascimento" required>
-      </div>
+    <div class="mb-3">
+      <label for="cpf" class="form-label">CPF</label>
+      <input type="text" class="form-control" name="cpf" id="cpf" placeholder="000.000.000-00" required>
+      <div class="text-danger small" id="cpf-error"></div>
+    </div>
 
-      <button type="submit" class="btn btn-primary">Cadastrar</button>
+    <div class="mb-3">
+      <label for="data_nascimento" class="form-label">Data de Nascimento</label>
+      <input type="date" class="form-control" name="data_nascimento" id="data_nascimento" required>
+      <div class="text-danger small" id="data-error"></div>
+    </div>
 
+    <button type="submit" class="btn btn-primary" id="submit-btn" disabled>Cadastrar</button>
+  </form>
+</div>
 
-    </form>
-  </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const telefoneInput = document.getElementById('telefone');
+    const cpfInput = document.getElementById('cpf');
+    const dataInput = document.getElementById('data_nascimento');
+    const submitBtn = document.getElementById('submit-btn');
+
+    const usernameError = document.getElementById('username-error');
+    const emailError = document.getElementById('email-error');
+    const passwordError = document.getElementById('password-error');
+    const telefoneError = document.getElementById('telefone-error');
+    const cpfError = document.getElementById('cpf-error');
+    const dataError = document.getElementById('data-error');
+
+    const usernameRegex = /^[a-zA-ZÀ-ÿ\s]{2,}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordStrongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+    let isAgeValid = false; // NOVO: guarda o resultado da validação de idade
+
+    function checkAllValid() {
+        return (
+            usernameRegex.test(usernameInput.value) &&
+            emailRegex.test(emailInput.value) &&
+            passwordStrongRegex.test(passwordInput.value) &&
+            telefoneInput.value.length === 15 &&
+            cpfInput.value.length === 14 &&
+            isAgeValid
+        );
+    }
+
+    function updateSubmitButton() {
+        submitBtn.disabled = !checkAllValid();
+    }
+
+    function formatTelefone(value) {
+        let numbers = value.replace(/\D/g, '');
+        if (numbers.length > 11) numbers = numbers.slice(0, 11);
+        if (numbers.length > 6) {
+            return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+        } else if (numbers.length > 2) {
+            return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+        } else {
+            return numbers;
+        }
+    }
+
+    function formatCPF(value) {
+        let numbers = value.replace(/\D/g, '');
+        if (numbers.length > 11) numbers = numbers.slice(0, 11);
+        if (numbers.length > 9) {
+            return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9)}`;
+        } else if (numbers.length > 6) {
+            return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+        } else if (numbers.length > 3) {
+            return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+        } else {
+            return numbers;
+        }
+    }
+
+    usernameInput.addEventListener('input', function() {
+        if (!usernameRegex.test(usernameInput.value)) {
+            usernameError.textContent = 'O nome deve ter pelo menos 2 letras e apenas caracteres válidos.';
+        } else {
+            usernameError.textContent = '';
+        }
+        updateSubmitButton();
+    });
+
+    emailInput.addEventListener('input', function() {
+        if (!emailRegex.test(emailInput.value)) {
+            emailError.textContent = 'Formato de e-mail inválido.';
+        } else {
+            emailError.textContent = '';
+        }
+        updateSubmitButton();
+    });
+
+    passwordInput.addEventListener('input', function() {
+        const val = passwordInput.value;
+        if (val.length < 8) {
+            passwordError.textContent = 'Senha muito curta (mínimo 8 caracteres).';
+        } else if (!passwordStrongRegex.test(val)) {
+            passwordError.textContent = 'Senha média (use letras maiúsculas, minúsculas, números e símbolos).';
+        } else {
+            passwordError.textContent = 'Senha forte!';
+        }
+        updateSubmitButton();
+    });
+
+    telefoneInput.addEventListener('input', function() {
+        telefoneInput.value = formatTelefone(telefoneInput.value);
+        if (telefoneInput.value.length !== 15) {
+            telefoneError.textContent = 'Formato esperado: (XX) XXXXX-XXXX.';
+        } else {
+            telefoneError.textContent = '';
+        }
+        updateSubmitButton();
+    });
+
+    cpfInput.addEventListener('input', function() {
+        cpfInput.value = formatCPF(cpfInput.value);
+        if (cpfInput.value.length !== 14) {
+            cpfError.textContent = 'Formato esperado: XXX.XXX.XXX-XX.';
+        } else {
+            cpfError.textContent = '';
+        }
+        updateSubmitButton();
+    });
+
+    dataInput.addEventListener('input', function() {
+        if (dataInput.value === '') {
+            dataError.textContent = 'A data não pode estar vazia.';
+            isAgeValid = false;
+        } else {
+            const birthDate = new Date(dataInput.value);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            const dayDiff = today.getDate() - birthDate.getDate();
+
+            if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+                age--;
+            }
+
+            if (age < 18) {
+                dataError.textContent = 'Você precisa ter pelo menos 18 anos para se cadastrar.';
+                isAgeValid = false;
+            } else {
+                dataError.textContent = '';
+                isAgeValid = true;
+            }
+        }
+        updateSubmitButton();
+    });
+
+    updateSubmitButton();
+});
+
+</script>
+
 </body>
 </html>

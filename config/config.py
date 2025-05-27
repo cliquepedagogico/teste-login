@@ -6,7 +6,7 @@ load_dotenv()
 
 class Config:
     # Chave secreta do Flask (você pode setar no .env também)
-    SECRET_KEY = os.getenv('SECRET_KEY', 'chave_secreta_padrao')
+    SECRET_KEY = os.getenv('SECRET_KEY')
 
     # API OpenAI
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
@@ -24,3 +24,10 @@ class Config:
     STRIPE_PRICE_ID = os.getenv('STRIPE_PRICE_ID')
     LINK_PAGAMENTO = os.getenv('LINK_PAGAMENTO')
     YOUR_DOMAIN = os.getenv('YOUR_DOMAIN')
+
+    MAIL_SERVER = os.getenv('MAIL_SERVER')
+    MAIL_PORT = int(os.getenv('MAIL_PORT'))
+    MAIL_USE_TLS = os.getenv('MAIL_USE_TLS') == 'True'
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME')
+    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
