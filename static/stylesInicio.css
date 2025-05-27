@@ -300,28 +300,14 @@ header {
   color: white;
   padding: 15px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
+
 
 .container {
-  padding: 20px;
+  height: 100vh;
 }
-
-.produtos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.produto {
-  background-color: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
-  width: 250px;
-}
-
 .produto img {
   width: 100%;
   border-radius: 5px;
@@ -355,7 +341,10 @@ header {
   background-color: red;
 }
 #inicio-container{
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  align-content: center;
   height: 100%;
 }
 #chat-container{
@@ -367,3 +356,17 @@ header {
   overflow: hidden;
   width: 100%;
 }
+#produtos{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#texto{
+  color: black;
+}
+#texto-span{
+  color: white;
+  font-size: 20px;
+}
+
+

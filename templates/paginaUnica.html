@@ -15,36 +15,26 @@
   <!-- BLOCO: CONTEÚDO INICIAL (antes do login) -->
   <div id="inicio-container" {% if user_id and tem_assinatura %}style="display: none;"{% endif %}>
     <header>
-      <h2>Bem-vindo</h2>
-      <a class="logout-btn" href="/login">Login</a>
-      <a class="logout-btn" href="/cadastrar">cadastrar</a>
+        <h2>Bem-vindo</h2>
+      <div id="bots">
+        <a class="logout-btn" href="/login">Login</a>
+        <a class="logout-btn" href="/cadastrar">cadastrar</a>
+      </div>
     </header>
 
-    <div class="container">
-      <h1>Loja de Exemplos</h1>
-      <div class="produtos">
-        <div class="produto">
-          <h3>Assinatura Mensal</h3>
-          <p>Renovação mensal</p>
-          <a href="/criar-assinatura">
-            <button>Pagar com credito</button>
-          </a>   
-          <button onclick="window.location.href='/assinar'">Assinar com boleto ou cartão</button>   
-          
-        </div>
-
-        <div class="produto">
-          <h3>Assinatura Anual</h3>
-          <p>Renovação Anual</p>
-        </div>
+      <div id="produtos">
+        <h1 id="texto">Chat<span id="texto-span"> Assistente</span></h1>
+          <div class="produto">
+            <button onclick="window.location.href='/assinar'">Assinar com boleto ou cartão</button>
+          </div>
       </div>
-    </div>
   </div>
 
   <!-- BLOCO: CHAT VIX (após login) -->
   <div id="chat-container" {% if not user_id or not tem_assinatura %}style="display: none;"{% endif %}>
-
+    
     <div id="sidebar">
+
       <div id="logo-container">
         <img id="logo" src="{{ url_for('static', filename='Logo Clique Pedagógico.png') }}" alt="Logotipo">
         <h1 id="vix-name">Olá, <span id="user-name">{{ username }}</span><br>Eu sou a Vix,<br>sua Assistente Pedagógica.</h1>
@@ -67,8 +57,9 @@
         <a href="/logout" class="btn btn-danger">Sair</a>
       </div>
       <div style="margin-top: 20px; text-align: center;">
-        <a href="/cancelar-assinatura">Cancelar assinatura</a>
+        <a href="/cancelar-assinatura" class="btn btn-danger">cancelar-assinatura</a>
       </div>
+     
     
     </div>
 
