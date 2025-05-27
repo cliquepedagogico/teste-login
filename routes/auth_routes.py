@@ -1,10 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask_mail import Message
-from datetime import datetime
 import re
-from flask_mail import Message
-from flask import current_app
 from models.assinatura import (
     cadastrar_assinatura,
     login_usuario,
@@ -14,16 +11,15 @@ from models.assinatura import (
 
 auth = Blueprint('auth', __name__)
 
-# Serializer configurado com a chave do app
+# Serializer configurado com a chave
 def get_serializer():
     return URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
 
 # Função para enviar e-mail de confirmação
-# Função para enviar e-mail de confirmação
 def enviar_email_confirmacao(email, token):
     confirm_url = url_for('auth.confirmar_email', token=token, _external=True)
     assunto = 'Confirme seu cadastro'
-    corpo = f'Olá! Clique no link para confirmar seu cadastro: {confirm_url}'
+    corpo = f'Olá! Clique no link para confirmar seu cadastro:\n\n{confirm_url}'
 
     msg = Message(assunto, recipients=[email])
     msg.body = corpo
@@ -35,8 +31,8 @@ def enviar_email_confirmacao(email, token):
         print(f'✅ E-mail de confirmação enviado para {email}')
     except Exception as e:
         print(f'❌ Erro ao enviar e-mail: {str(e)}')
-# ======== ROTAS DE AUTENTICAÇÃO ========
 
+# ROTA: Cadastrar
 @auth.route('/cadastrar', methods=['GET', 'POST'])
 def cadastrar():
     if request.method == 'POST':
@@ -54,7 +50,7 @@ def cadastrar():
             flash('Formato de data inválido.', 'danger')
             return redirect(url_for('auth.cadastrar'))
 
-        # Regex
+        # Validações
         email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
         telefone_pattern = r'^\(\d{2}\)\s\d{5}-\d{4}$'
         cpf_pattern = r'^\d{3}\.\d{3}\.\d{3}-\d{2}$'
@@ -80,11 +76,9 @@ def cadastrar():
             flash('A senha é muito fraca.', 'danger')
             return redirect(url_for('auth.cadastrar'))
 
-        # Gera token e armazena dados no session
+        # Monta dados no token
         serializer = get_serializer()
-        token = serializer.dumps(email, salt='email-confirm')
-
-        session['pending_user'] = {
+        user_data = {
             'username': username,
             'email': email,
             'password': password,
@@ -92,6 +86,7 @@ def cadastrar():
             'cpf': cpf,
             'data_nascimento': data_nascimento
         }
+        token = serializer.dumps(user_data, salt='email-confirm')
 
         enviar_email_confirmacao(email, token)
         flash('Enviamos um e-mail para confirmação. Verifique sua caixa de entrada.', 'info')
@@ -99,11 +94,12 @@ def cadastrar():
 
     return render_template('cadastrar.html')
 
+# ROTA: Confirmar e-mail
 @auth.route('/confirmar_email/<token>')
 def confirmar_email(token):
     serializer = get_serializer()
     try:
-        email = serializer.loads(token, salt='email-confirm', max_age=3600)
+        user_data = serializer.loads(token, salt='email-confirm', max_age=3600)
     except SignatureExpired:
         flash('O link expirou. Tente novamente.', 'danger')
         return redirect(url_for('auth.cadastrar'))
@@ -111,28 +107,23 @@ def confirmar_email(token):
         flash('Link inválido.', 'danger')
         return redirect(url_for('auth.cadastrar'))
 
-    pending_user = session.get('pending_user')
-    if pending_user and pending_user['email'] == email:
-        resultado = cadastrar_assinatura(
-            pending_user['username'],
-            pending_user['email'],
-            pending_user['password'],
-            pending_user['telefone'],
-            pending_user['cpf'],
-            pending_user['data_nascimento']
-        )
-        if resultado is True:
-            flash('Cadastro confirmado com sucesso! Agora você pode fazer login.', 'success')
-        else:
-            flash('Erro ao salvar o usuário no banco.', 'danger')
+    resultado = cadastrar_assinatura(
+        user_data['username'],
+        user_data['email'],
+        user_data['password'],
+        user_data['telefone'],
+        user_data['cpf'],
+        user_data['data_nascimento']
+    )
 
-        session.pop('pending_user', None)
+    if resultado is True:
+        flash('Cadastro confirmado com sucesso! Agora você pode fazer login.', 'success')
     else:
-        flash('Nenhum cadastro pendente encontrado ou já confirmado.', 'warning')
+        flash('Erro ao salvar o usuário no banco.', 'danger')
 
     return redirect(url_for('auth.login'))
 
-# Validação de senha forte
+# Senha forte
 def check_password_strength(password):
     if len(password) < 8:
         return 'fraca'
@@ -146,6 +137,7 @@ def check_password_strength(password):
         return 'fraca'
     return 'forte'
 
+# ROTA: Login
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -165,11 +157,13 @@ def login():
 
     return render_template('index.html', error=error)
 
+# ROTA: Logout
 @auth.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('auth.index'))
 
+# ROTA: Página principal
 @auth.route('/')
 def index():
     user_id = session.get('user_id')
