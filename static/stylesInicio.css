@@ -368,5 +368,21 @@ header {
   color: white;
   font-size: 20px;
 }
+#nao-logado-container{
+  height: 100%;
+  width: 100%;
+}
 
-
+#sem-assinatura-container{
+  height: 100%;
+  width: 100%;
+}
+.produto{
+  background-color: red;
+  height: 200px;
+  width: 200px;
+}
+.produto > button {
+  height: 100%;
+  width: 100px;
+}

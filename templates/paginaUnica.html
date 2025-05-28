@@ -11,14 +11,35 @@
 <body>
  
 
+  <!-- BLOCO: APENAS PARA USUÁRIO NÃO LOGADO -->
+<div id="nao-logado-container" {% if user_id %}style="display: none;"{% endif %}>
+  <header>
+    <h2>Explore Gratuitamente</h2>
+    <div id="bots">
+      <a class="logout-btn" href="/login">Login</a>
+      <a class="logout-btn" href="/cadastrar">Cadastrar</a>
+    </div>
+  </header>
 
-  <!-- BLOCO: CONTEÚDO INICIAL (antes do login) -->
-  <div id="inicio-container" {% if user_id and tem_assinatura %}style="display: none;"{% endif %}>
+  <div id="conteudo-nao-logado">
+    <h1>Você ainda não está logado!</h1>
+    <p>Aqui você pode explorar exemplos de funcionalidades:</p>
+
+    <ul>
+      <li>✅ Veja prévias de planos de aula</li>
+      <li>✅ Descubra ideias de atividades</li>
+      <li>✅ Explore relatórios de demonstração</li>
+    </ul>
+
+  </div>
+</div>
+
+  <!-- BLOCO: CONTEÚDO INICIAL SEM ASSINATURA -->
+  <div id="sem-assinatura-container" {% if not user_id or tem_assinatura %}style="display: none;"{% endif %}>
     <header>
-        <h2>Bem-vindo</h2>
-      <div id="bots">
-        <a class="logout-btn" href="/login">Login</a>
-        <a class="logout-btn" href="/cadastrar">cadastrar</a>
+        <h2>Bem-vindo <span id="user-name">{{ username }}</span></h2> 
+         <div style="margin-top: 20px; text-align: center;">
+        <a href="/logout" class="btn btn-danger">Sair</a>
       </div>
     </header>
 
@@ -30,7 +51,7 @@
       </div>
   </div>
 
-  <!-- BLOCO: CHAT VIX (após login) -->
+  <!-- BLOCO: CHAT VIX COM ASSINATURA -->
   <div id="chat-container" {% if not user_id or not tem_assinatura %}style="display: none;"{% endif %}>
     
     <div id="sidebar">
