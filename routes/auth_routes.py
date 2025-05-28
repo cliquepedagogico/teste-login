@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
+from argon2 import PasswordHasher, exceptions
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask_mail import Message
 import re
@@ -10,6 +11,7 @@ from models.assinatura import (
 )
 
 auth = Blueprint('auth', __name__)
+ph = PasswordHasher()
 
 # Serializer configurado com a chave
 def get_serializer():
@@ -76,12 +78,15 @@ def cadastrar():
             flash('A senha é muito fraca.', 'danger')
             return redirect(url_for('auth.cadastrar'))
 
+        # 🔒 Gera hash da senha usando Argon2
+        hashed_password = ph.hash(password)
+
         # Monta dados no token
         serializer = get_serializer()
         user_data = {
             'username': username,
             'email': email,
-            'password': password,
+            'password': hashed_password,
             'telefone': telefone,
             'cpf': cpf,
             'data_nascimento': data_nascimento
@@ -107,21 +112,28 @@ def confirmar_email(token):
         flash('Link inválido.', 'danger')
         return redirect(url_for('auth.cadastrar'))
 
-    resultado = cadastrar_assinatura(
-        user_data['username'],
-        user_data['email'],
-        user_data['password'],
-        user_data['telefone'],
-        user_data['cpf'],
-        user_data['data_nascimento']
-    )
+    try:
+        resultado = cadastrar_assinatura(
+            user_data['username'],
+            user_data['email'],
+            user_data['password'],
+            user_data['telefone'],
+            user_data['cpf'],
+            user_data['data_nascimento']
+        )
 
-    if resultado is True:
-        flash('Cadastro confirmado com sucesso! Agora você pode fazer login.', 'success')
-    else:
-        flash('Erro ao salvar o usuário no banco.', 'danger')
+        if resultado is True:
+            flash('Cadastro confirmado com sucesso! Agora você pode fazer login.', 'success')
+        else:
+            # ⚠️ Aqui mostramos a mensagem exata retornada (email duplicado, CPF duplicado ou erro interno)
+            flash(f'{resultado}', 'danger')
+
+    except Exception as e:
+        flash(f'Erro inesperado ao salvar no banco: {str(e)}', 'danger')
+        print(f'❌ Erro inesperado ao salvar no banco: {str(e)}')
 
     return redirect(url_for('auth.login'))
+
 
 # Senha forte
 def check_password_strength(password):
@@ -138,6 +150,10 @@ def check_password_strength(password):
     return 'forte'
 
 # ROTA: Login
+from argon2 import PasswordHasher, exceptions
+
+ph = PasswordHasher()
+
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -145,15 +161,23 @@ def login():
         user_input = request.form['username']
         password = request.form['password']
 
-        user = login_usuario(user_input, password)
+        user = login_usuario(user_input)  # sem passar senha aqui!
+
         if user:
-            session['user_id'] = user.id
-            session['username'] = user.username
-            session['email'] = user.email
-            session['status_assinatura'] = user.status
-            return redirect(url_for('auth.index'))
+            try:
+                ph.verify(user.senha, password)
+
+                session['user_id'] = user.id
+                session['username'] = user.username
+                session['email'] = user.email
+                session['status_assinatura'] = user.status
+
+                return redirect(url_for('auth.index'))
+
+            except exceptions.VerifyMismatchError:
+                error = "Senha incorreta"
         else:
-            error = "Usuário, e-mail ou senha incorretos"
+            error = "Usuário ou e-mail não encontrado"
 
     return render_template('index.html', error=error)
 
