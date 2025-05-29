@@ -60,13 +60,13 @@
 
   <!-- BLOCO: CHAT VIX COM ASSINATURA -->
   <div id="chat-container" {% if not user_id or not tem_assinatura %}style="display: none;"{% endif %}>
-    
     <div id="sidebar">
 
       <div id="logo-container">
         <img id="logo" src="{{ url_for('static', filename='Logo Clique Pedagógico.png') }}" alt="Logotipo">
         <h1 id="vix-name">Olá, <span id="user-name">{{ username }}</span><br>Eu sou a Vix,<br>sua Assistente Pedagógica.</h1>
       </div>
+
       <h2 id="chats-title">Chats</h2>
       <div class="question-list">
         <button class="btn btn-light" onclick="newConversation()">Tire uma Dúvida</button>
@@ -79,19 +79,22 @@
       <div class="history" id="conversation-history">
         <div id="conversations-list"></div>
       </div>
-
-      <!-- 🔴 Botão de sair dentro do chat -->
-      <div style="margin-top: 20px; text-align: center;">
-        <a href="/logout" class="btn btn-danger">Sair</a>
-      </div>
-      <div style="margin-top: 20px; text-align: center;">
-        <a href="/cancelar-assinatura" class="btn btn-danger">cancelar-assinatura</a>
-      </div>
+   
      
-    
     </div>
 
+
+    
     <button id="toggle-sidebar" onclick="toggleSidebar()">⬅</button>
+            
+    <div id="menuAssinante-action">
+    <a id="menuAssinante-botao" href="javascript:void(0)"><i class='bx bx-user'></i></a>
+    <div class="profile-menu" id="menuAssinante-menu">
+        <a href="#">Fazer upgrade do plano</a>
+        <a href="/pagina_usuario">Perfil</a>
+        <a href="/logout">Sair</a>
+    </div>
+</div>
 
     <div id="main-content">
       <div id="chat-box"></div>
@@ -100,6 +103,7 @@
       <button class="btn btn-enviar" onclick="sendMessage()">Enviar</button>
     </div>
   </div>
+  
 
   <!-- Scripts -->
   <script>
@@ -135,6 +139,36 @@
         }
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const perfilBotaoAssinante = document.getElementById('menuAssinante-botao');
+    const menuAssinante = document.getElementById('menuAssinante-menu');
+
+    if (perfilBotaoAssinante && menuAssinante) {
+        perfilBotaoAssinante.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (menuAssinante.classList.contains('show')) {
+                menuAssinante.classList.remove('show');
+                setTimeout(() => { menuAssinante.style.display = 'none'; }, 300);
+            } else {
+                menuAssinante.style.display = 'block';
+                setTimeout(() => { menuAssinante.classList.add('show'); }, 10);
+            }
+        });
+
+        window.addEventListener('click', function(event) {
+            if (!perfilBotaoAssinante.contains(event.target) && !menuAssinante.contains(event.target)) {
+                if (menuAssinante.classList.contains('show')) {
+                    menuAssinante.classList.remove('show');
+                    setTimeout(() => { menuAssinante.style.display = 'none'; }, 300);
+                }
+            }
+        });
+    }
+});
+
 </script>
 
 </body>

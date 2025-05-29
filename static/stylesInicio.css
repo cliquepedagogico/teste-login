@@ -24,6 +24,7 @@ body {
 #sidebar.recolhido {
   width: 50px;
   padding: 5px;
+  z-index: 999;
 }
 
 #sidebar h2, #sidebar h3, #sidebar button, #sidebar p, #conversations-list {
@@ -223,6 +224,7 @@ body {
   left: 235px;
   cursor: pointer;
   transition: left 0.3s ease;
+  z-index: 999;
 }
 
 #sidebar.recolhido + #toggle-sidebar {
@@ -301,10 +303,8 @@ body {
   color: white;
   padding: 15px;
   display: flex;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
   align-items: center;
+  justify-content: space-between;
 }
 
 
@@ -449,7 +449,7 @@ body {
     margin-top: 5px;
     opacity: 0;
     transform: translateY(-10px);
-    transition: opacity 0.1s ease, transform 0.2s ease;
+    transition: opacity 0.1s ease, transform 0.1s ease;
 }
 
 .profile-menu a {
@@ -491,4 +491,111 @@ body {
   #texto-naoass{
     display: none;
   }
+}
+
+
+.btn-acoes {
+    background-color: white;
+    text-decoration: none;
+    height: 30px;
+    border: none;
+}
+
+#log {
+    background-color: #4B0082;
+    position: relative;
+    padding: 10px;
+    color: white;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+}
+
+#menuAssinante-perfil {
+    text-decoration: none;
+    font-size: 35px;
+    color: white;
+}
+
+#menuAssinante-action {
+    height: 100%;
+    display: flex;
+    position: relative;
+    flex-direction: column-reverse;
+}
+
+.menuAssinante-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* BOTÃO DO PERFIL */
+#menuAssinante-botao {
+    color: gray;
+    text-decoration: none;
+    font-size: 40px;
+    padding: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    right: 150%;
+    bottom: 30%;
+}
+
+#menuAssinante-menu {
+    display: none;
+    position: absolute;
+    right: 60px;
+    top: 70%; 
+    background-color: #4B0082;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+    border-radius: 5px;
+    z-index: 10;
+    margin-top: 5px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+#menuAssinante-menu.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#menuAssinante-menu a {
+    color: white;
+    padding: 8px 5px;
+    text-decoration: none;
+    display: block;
+    border-bottom: 1px solid #21102e;
+}
+
+#menuAssinante-menu a:hover {
+    background-color: #893FBF;
+}
+
+#menuAssinante-texto {
+    color: #00E280;
+}
+
+#menuAssinante-username {
+    color: black;
+}
+
+@media (max-width: 768px) {
+    #menuAssinante-botao {
+       z-index: 1;
+    }
+    #menuAssinante-action{
+      z-index: 1;
+
+    }
+    #main-content{
+      z-index: 999;
+    }
 }
