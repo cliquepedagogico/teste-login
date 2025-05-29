@@ -519,6 +519,7 @@ body {
 }
 
 #menuAssinante-action {
+  display: none;
     height: 100%;
     display: flex;
     position: relative;
@@ -526,12 +527,14 @@ body {
 }
 
 .menuAssinante-container {
+  display: none;
     position: relative;
     display: inline-block;
 }
 
 /* BOTÃO DO PERFIL */
 #menuAssinante-botao {
+  display: none;
     color: gray;
     text-decoration: none;
     font-size: 40px;
@@ -546,6 +549,7 @@ body {
 }
 
 #menuAssinante-menu {
+
     display: none;
     position: absolute;
     right: 60px;
@@ -562,12 +566,14 @@ body {
 }
 
 #menuAssinante-menu.show {
+  display: none;
     display: block;
     opacity: 1;
     transform: translateY(0);
 }
 
 #menuAssinante-menu a {
+  display: none;
     color: white;
     padding: 8px 5px;
     text-decoration: none;
@@ -576,26 +582,30 @@ body {
 }
 
 #menuAssinante-menu a:hover {
+  display: none;
     background-color: #893FBF;
 }
 
 #menuAssinante-texto {
+  display: none;
     color: #00E280;
 }
 
 #menuAssinante-username {
+  display: none;
     color: black;
 }
 
 @media (max-width: 768px) {
     #menuAssinante-botao {
-       z-index: 1;
+      display: none;
     }
     #menuAssinante-action{
       z-index: 1;
-
+      display: none;
     }
     #main-content{
       z-index: 999;
+      display: none;
     }
 }
