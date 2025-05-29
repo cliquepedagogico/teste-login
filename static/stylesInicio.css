@@ -5,6 +5,7 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   overflow: hidden;
+  background-image: url(Fundo\ Site\ Sem\ Cor\ -.png);
 }
 
 #sidebar {
@@ -295,13 +296,15 @@ body {
   }
 }
 
-header {
+#notlog {
   background-color: #4B0082;
   color: white;
   padding: 15px;
   display: flex;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
   align-items: center;
-  justify-content: space-between;
 }
 
 
@@ -337,9 +340,7 @@ header {
   width: 100px;
   cursor: pointer;
 }
-#sair{
-  background-color: red;
-}
+
 #inicio-container{
   display: flex;
   flex-direction: column;
@@ -385,4 +386,109 @@ header {
 .produto > button {
   height: 100%;
   width: 100px;
+}
+#link-sair{
+  text-decoration: none;
+  color: black;
+}
+.btn-acoes{
+  background-color: white;
+  text-decoration: none;
+  height: 30px;
+  border: none;
+}
+#log{
+  background-color: #4B0082;
+  position: relative;
+  padding: 10px;
+  color: white;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+}
+#perfil{
+  text-decoration: none;
+  font-size: 35px;
+  color: white;
+}
+#action{
+  height: 100%;
+  display: flex;
+  position: relative;
+  flex-direction: column-reverse;
+}
+
+.profile-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* BOTÃO DO PERFIL */
+#perfil {
+    color: white;
+    text-decoration: none;
+    font-size: 40px;
+    padding: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.profile-menu {
+    display: none;
+    position: absolute;
+    right: -120%;
+    top: 100%; 
+    background-color: #6a1b9a;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+    border-radius: 5px;
+    z-index: 10;
+    margin-top: 5px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.1s ease, transform 0.2s ease;
+}
+
+.profile-menu a {
+    color: white;
+    padding: 8px 5px;
+    text-decoration: none;
+    display: block;
+    border-bottom: 1px solid #21102e;
+}
+.profile-menu.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.profile-menu a:hover {
+    background-color: #893FBF;
+}
+#texto-naoass{
+  color: #00E280;
+}
+#user-name{
+  color: red;
+}
+#texto-naoassC{
+  display: none;
+}
+#perfilC{
+  display: none;
+}
+@media (max-width: 768px){
+  #log{
+    display:flex;
+    flex-direction: column;
+  }
+  #perfil{
+    display: none;
+  }
+  #texto-naoass{
+    display: none;
+  }
 }

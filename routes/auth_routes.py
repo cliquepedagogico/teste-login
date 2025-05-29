@@ -3,6 +3,7 @@ from argon2 import PasswordHasher, exceptions
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask_mail import Message
 import re
+from models.assinatura import Session, Assinatura
 from models.assinatura import (
     cadastrar_assinatura,
     login_usuario,
@@ -200,3 +201,33 @@ def index():
             tem_assinatura = verificar_assinatura_por_email(email)
 
     return render_template('paginaUnica.html', username=username, user_id=user_id, tem_assinatura=tem_assinatura)
+
+
+@auth.route('/pagina_usuario', methods=['GET'])
+def pagina_usuario():
+    if 'user_id' not in session:
+        flash('Você precisa estar logado para acessar essa página.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    user_id = session['user_id']
+    db_session = Session()
+
+    try:
+        usuario = db_session.query(Assinatura).filter_by(id=user_id).first()
+
+        if not usuario:
+            flash('Usuário não encontrado.', 'danger')
+            return redirect(url_for('auth.index'))
+
+        return render_template(
+            'pagina_usuario.html',
+            usuario=usuario
+        )
+
+    except Exception as e:
+        flash(f'Erro ao carregar os dados do usuário: {str(e)}', 'danger')
+        print(f'❌ Erro ao buscar usuário no banco: {str(e)}')
+        return redirect(url_for('auth.index'))
+
+    finally:
+        db_session.close()

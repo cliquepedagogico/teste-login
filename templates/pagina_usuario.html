@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Página do Usuário</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 30px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        p {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        .label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Perfil do Usuário</h1>
+        <p><span class="label">Nome:</span> {{ usuario.username }}</p>
+        <p><span class="label">E-mail:</span> {{ usuario.email }}</p>
+        <p><span class="label">CPF:</span> {{ usuario.cpf }}</p>
+        <p><span class="label">Telefone:</span> {{ usuario.telefone }}</p>
+        <p><span class="label">Data de Nascimento:</span> {{ usuario.data_nascimento }}</p>
+        <p><span class="label">Plano (Status):</span> {{ usuario.status }}</p>
+        <a href="{{ url_for('auth.index') }}">← Voltar à página inicial</a>
+    </div>
+</body>
+</html>

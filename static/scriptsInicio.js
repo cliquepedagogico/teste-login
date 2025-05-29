@@ -379,3 +379,4 @@ document.getElementById("btnAssinar").addEventListener("click", () => {
     alert("Ocorreu um erro ao iniciar a assinatura.");
   });
 });
+
