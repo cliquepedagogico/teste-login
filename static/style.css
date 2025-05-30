@@ -16,13 +16,17 @@ body {
     background-color: #8a3fbf43;
     width: 100%;
 }
+#cont-img{
+  
+    align-content: center;
+    border-radius: 10px;
+}
 section{
     display: flex;
     flex-direction: row;
-    margin-top: 100px;
     justify-content: space-around;
     width: 100%;
-    margin: 100px 200px 0px 200px;
+    margin: 80px 200px 0px 200px;
     height: 80vh;
     border-radius: 10px ;
     box-shadow: 0 4px 12px rgb(0, 0, 0);
@@ -30,12 +34,11 @@ section{
 }
 #img-login{
     display: flex;
-    width: 100%;
     margin: 30px;
     flex-direction: row;
     align-items: center;
-    height: 90%;
-    width: 50%;
+    height: 300px;
+    width: 300px;
 }
 #img-login-celular{
     opacity: 0;
@@ -83,16 +86,17 @@ input[type="text"], input[type="password"] {
     color: black;
 }
 #coruja-login{
-    position: absolute;
+    position: relative;
     background-color: red;
     height: 0%;
     width: 0%;
-    top: -22px;
-    left: 300px;
-    z-index: 999;
+    top: -17px;
+    z-index: 1;
 }
 #img-coruja{
-    height: 150px;
+    position: relative;
+    height: 120px;
+    left: 150px;
 }
 h2{
     color: white;
@@ -122,13 +126,17 @@ h2{
     }
     input[type="text"], input[type="password"] {
         position: relative;
-        right: 10px;
+        width: 150%;
+        right: 75px;
+        padding: 15px;
         top: -60px;
     }
     #Entrar{
         position: relative;
-        left: -1px;
+        width: 165%;
+        left: -65px;
         top: -60px;
+        padding: 15px;
     }
     #img-login-celular{
         height: 30%;
@@ -148,7 +156,7 @@ h2{
         width: 50%;
     }
    #coruja-login{
-    left: 500px;
+    left: 100px;
 }
     
 }
