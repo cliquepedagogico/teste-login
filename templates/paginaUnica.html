@@ -60,13 +60,13 @@
 
   <!-- BLOCO: CHAT VIX COM ASSINATURA -->
   <div id="chat-container" {% if not user_id or not tem_assinatura %}style="display: none;"{% endif %}>
+    
     <div id="sidebar">
-
       <div id="logo-container">
         <img id="logo" src="{{ url_for('static', filename='Logo Clique Pedagógico.png') }}" alt="Logotipo">
         <h1 id="vix-name">Olá, <span id="user-name">{{ username }}</span><br>Eu sou a Vix,<br>sua Assistente Pedagógica.</h1>
       </div>
-
+     
       <h2 id="chats-title">Chats</h2>
       <div class="question-list">
         <button class="btn btn-light" onclick="newConversation()">Tire uma Dúvida</button>
@@ -78,18 +78,26 @@
       <h3 id="historico-title">Histórico de Conversas</h3>
       <div class="history" id="conversation-history">
         <div id="conversations-list"></div>
-      </div>
-   
-     
+
+          <!--bloco de login-->
+       <div id="action-assinante">
+        <a id="perfil-assinante" href="javascript:void(0)"><i class='bx bx-user' ><span id="user-name-assinante">{{ username }}</span></i></a>
+        <div class="profile-menu-assinante" id="profile-menu-assinante">
+            <a href="/pagina_usuario">Perfil</a>
+            <a href="/logout">Sair</a>
+        </div>
     </div>
+      <!--bloco de login-->
 
-
-    
-    <button id="toggle-sidebar" onclick="toggleSidebar()">⬅</button>
-            
+      </div>
+      
+       
+    </div>
+     <button id="toggle-sidebar" onclick="toggleSidebar()">⬅</button>
+      
   
-
     <div id="main-content">
+      
       <div id="chat-box"></div>
       <textarea id="user-input" class="form-control mt-3" placeholder="Escreva sua mensagem aqui"
                 oninput="autoResize(this)" onkeypress="checkEnter(event)"></textarea>
@@ -161,6 +169,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const perfilAssinanteButton = document.getElementById('perfil-assinante');
+    const profileMenuAssinante = document.getElementById('profile-menu-assinante');
+
+    if (perfilAssinanteButton && profileMenuAssinante) {
+        perfilAssinanteButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (profileMenuAssinante.classList.contains('show')) {
+                profileMenuAssinante.classList.remove('show');
+                setTimeout(() => { profileMenuAssinante.style.display = 'none'; }, 300);
+            } else {
+                profileMenuAssinante.style.display = 'block';
+                setTimeout(() => { profileMenuAssinante.classList.add('show'); }, 10);
+            }
+        });
+
+        window.addEventListener('click', function(event) {
+            if (!perfilAssinanteButton.contains(event.target) && !profileMenuAssinante.contains(event.target)) {
+                if (profileMenuAssinante.classList.contains('show')) {
+                    profileMenuAssinante.classList.remove('show');
+                    setTimeout(() => { profileMenuAssinante.style.display = 'none'; }, 300);
+                }
+            }
+        });
+    }
+});
+
 
 </script>
 

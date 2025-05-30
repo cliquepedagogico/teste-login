@@ -5,7 +5,7 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   overflow: hidden;
-  background-image: url(Fundo\ Site\ Sem\ Cor\ -.png);
+ 
 }
 
 #sidebar {
@@ -19,6 +19,7 @@ body {
   position: relative;
   transition: width 0.3s ease;
   flex-shrink: 0;
+  z-index: 0;
 }
 
 #sidebar.recolhido {
@@ -31,7 +32,7 @@ body {
   transition: opacity 0.3s ease;
 }
 
-#sidebar.recolhido h2, #sidebar.recolhido h3, #sidebar.recolhido button, #sidebar.recolhido p, #sidebar.recolhido #conversations-list {
+#sidebar.recolhido h2, #sidebar.recolhido h3, #sidebar.recolhido button, #sidebar.recolhido p, #sidebar.recolhido #conversations-list{
   opacity: 0;
   pointer-events: none;
 }
@@ -219,7 +220,7 @@ body {
   color: #ffffff;
   border: none;
   border-radius: 15px;
-  position: absolute;
+  position: fixed;
   top: 10px;
   left: 235px;
   cursor: pointer;
@@ -428,7 +429,7 @@ body {
 #perfil {
     color: white;
     text-decoration: none;
-    font-size: 40px;
+    font-size: 30px;
     padding: 5px;
     display: inline-flex;
     align-items: center;
@@ -472,7 +473,7 @@ body {
   color: #00E280;
 }
 #user-name{
-  color: red;
+  color: white;
 }
 #texto-naoassC{
   display: none;
@@ -519,7 +520,6 @@ body {
 }
 
 #menuAssinante-action {
-  display: none;
     height: 100%;
     display: flex;
     position: relative;
@@ -527,14 +527,12 @@ body {
 }
 
 .menuAssinante-container {
-  display: none;
     position: relative;
     display: inline-block;
 }
 
 /* BOTÃO DO PERFIL */
 #menuAssinante-botao {
-  display: none;
     color: gray;
     text-decoration: none;
     font-size: 40px;
@@ -549,8 +547,6 @@ body {
 }
 
 #menuAssinante-menu {
-
-    display: none;
     position: absolute;
     right: 60px;
     top: 70%; 
@@ -566,14 +562,12 @@ body {
 }
 
 #menuAssinante-menu.show {
-  display: none;
     display: block;
     opacity: 1;
     transform: translateY(0);
 }
 
 #menuAssinante-menu a {
-  display: none;
     color: white;
     padding: 8px 5px;
     text-decoration: none;
@@ -582,30 +576,86 @@ body {
 }
 
 #menuAssinante-menu a:hover {
-  display: none;
     background-color: #893FBF;
 }
 
 #menuAssinante-texto {
-  display: none;
     color: #00E280;
 }
 
 #menuAssinante-username {
-  display: none;
     color: black;
 }
 
 @media (max-width: 768px) {
-    #menuAssinante-botao {
-      display: none;
-    }
-    #menuAssinante-action{
-      z-index: 1;
-      display: none;
-    }
-    #main-content{
-      z-index: 999;
-      display: none;
-    }
+  #profile-menu-assinante {
+    width: 140px;
+    right: -140px;
+    display: none;
+  }
+   
+}
+
+/*Bloco de assinante*/
+#perfil-assinante {
+  color: white;
+  text-decoration: none;
+  font-size: 30px;
+  padding: 5px;
+  bottom: 10px;
+  display: flex;
+  position: relative;
+  cursor: pointer;
+  justify-content: end;
+}
+#action-assinante{
+  height: 4%;
+  top: 95%;
+  width: 0%;
+  display: flex;
+  justify-content: start;
+  position:fixed;
+  z-index: 999;
+  flex-direction: row;
+  margin-bottom: 10px;
+  background-color: #00E280;
+}
+
+.profile-menu-assinante {
+    display: none;
+    position: absolute;
+    right: -220px;
+    top:-300%; 
+    background-color: #6a1b9a;
+    width: 230px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.591);
+    border-radius: 5px;
+    margin-top: 5px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.profile-menu-assinante a {
+    color: white;
+    padding: 8px 5px;
+    text-decoration: none;
+    display: block;
+    border-bottom: 1px solid #21102e;
+}
+.profile-menu-assinante.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.profile-menu-assinante a:hover {
+    background-color: #893FBF;
+}
+#user-name-assinante{
+  color: white;
+  font-size: 15px;
+  padding-left: 5px;
+  top: 30px;
+  z-index: 999;
 }
