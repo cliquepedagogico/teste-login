@@ -486,11 +486,12 @@ body {
     display:flex;
     flex-direction: column;
   }
-  #perfil{
-    display: none;
-  }
   #texto-naoass{
     display: none;
+  }
+  .logout-btn{
+    display: flex;
+    margin: 10px;
   }
 }
 
