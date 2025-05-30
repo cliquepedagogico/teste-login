@@ -101,6 +101,9 @@ h2{
     #img-login{
         display: none;
     }
+    body{
+        background-color:#55177c ;
+    }
     #img-coruja{
     display: none;
     }
