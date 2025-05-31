@@ -35,6 +35,31 @@ def enviar_email_confirmacao(email, token):
     except Exception as e:
         print(f'❌ Erro ao enviar e-mail: {str(e)}')
 
+# Função para validar o CPF matematicamente
+def validar_cpf(cpf):
+    cpf = ''.join(filter(str.isdigit, cpf))
+
+    if len(cpf) != 11 or cpf == cpf[0] * 11:
+        return False
+
+    # Valida primeiro dígito
+    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
+    resto = (soma * 10) % 11
+    if resto == 10:
+        resto = 0
+    if resto != int(cpf[9]):
+        return False
+
+    # Valida segundo dígito
+    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
+    resto = (soma * 10) % 11
+    if resto == 10:
+        resto = 0
+    if resto != int(cpf[10]):
+        return False
+
+    return True
+
 # ROTA: Cadastrar
 @auth.route('/cadastrar', methods=['GET', 'POST'])
 def cadastrar():
@@ -69,6 +94,10 @@ def cadastrar():
 
         if not re.match(cpf_pattern, cpf):
             flash('Formato de CPF inválido.', 'danger')
+            return redirect(url_for('auth.cadastrar'))
+
+        if not validar_cpf(cpf):
+            flash('CPF inválido. Insira um número válido.', 'danger')
             return redirect(url_for('auth.cadastrar'))
 
         if not re.match(data_pattern, data_nascimento):
