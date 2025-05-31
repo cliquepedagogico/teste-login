@@ -160,3 +160,12 @@ h2{
 }
     
 }
+#esc-senha{
+    color: white;
+    text-decoration: none;
+    padding-top: 20px;
+    padding-right: 20px;
+}
+#esc-senha:hover{
+    color: #00E280;
+}

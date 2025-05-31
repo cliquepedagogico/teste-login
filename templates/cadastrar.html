@@ -4,6 +4,23 @@
   <meta charset="UTF-8">
   <title>Cadastro</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    #password-strength {
+        height: 8px;
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+    .strength-bar {
+        height: 100%;
+        width: 0%;
+        background-color: transparent;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+  </style>
 </head>
 <body class="bg-light">
 
@@ -26,6 +43,9 @@
     <div class="mb-3">
       <label for="password" class="form-label">Senha</label>
       <input type="password" class="form-control" name="password" id="password" required>
+      <div id="password-strength">
+        <div class="strength-bar"></div>
+      </div>
       <div class="text-danger small" id="password-error"></div>
     </div>
 
@@ -60,6 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cpfInput = document.getElementById('cpf');
     const dataInput = document.getElementById('data_nascimento');
     const submitBtn = document.getElementById('submit-btn');
+    const strengthBar = document.querySelector('.strength-bar');
 
     const usernameError = document.getElementById('username-error');
     const emailError = document.getElementById('email-error');
@@ -70,15 +91,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const usernameRegex = /^[a-zA-ZÀ-ÿ\s]{2,}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const passwordStrongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 
-    let isAgeValid = false; // NOVO: guarda o resultado da validação de idade
+    let isAgeValid = false;
+
+    function evaluatePasswordStrength(password) {
+        let strength = 0;
+        if (password.length >= 8) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[a-z]/.test(password)) strength++;
+        if (/\d/.test(password)) strength++;
+        if (/[\W_]/.test(password)) strength++;
+        return strength;
+    }
+
+    function updateStrengthDisplay(strength) {
+        let width = '0%';
+        let color = 'transparent';
+        let text = '';
+
+        if (strength <= 2) {
+            width = '30%';
+            color = '#dc3545'; // vermelho
+            text = 'Senha fraca';
+        } else if (strength === 3 || strength === 4) {
+            width = '60%';
+            color = '#ffc107'; // amarelo
+            text = 'Senha média';
+        } else if (strength >= 5) {
+            width = '100%';
+            color = '#28a745'; // verde
+            text = 'Senha forte!';
+        }
+
+        strengthBar.style.width = width;
+        strengthBar.style.backgroundColor = color;
+        passwordError.textContent = text;
+
+        if (color === '#dc3545') {
+            passwordError.className = 'text-danger small';
+        } else if (color === '#ffc107') {
+            passwordError.className = 'text-warning small';
+        } else if (color === '#28a745') {
+            passwordError.className = 'text-success small';
+        }
+    }
 
     function checkAllValid() {
+        const passwordStrength = evaluatePasswordStrength(passwordInput.value);
         return (
             usernameRegex.test(usernameInput.value) &&
             emailRegex.test(emailInput.value) &&
-            passwordStrongRegex.test(passwordInput.value) &&
+            passwordStrength >= 5 &&
             telefoneInput.value.length === 15 &&
             cpfInput.value.length === 14 &&
             isAgeValid
@@ -134,14 +197,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     passwordInput.addEventListener('input', function() {
-        const val = passwordInput.value;
-        if (val.length < 8) {
-            passwordError.textContent = 'Senha muito curta (mínimo 8 caracteres).';
-        } else if (!passwordStrongRegex.test(val)) {
-            passwordError.textContent = 'Senha média (use letras maiúsculas, minúsculas, números e símbolos).';
-        } else {
-            passwordError.textContent = 'Senha forte!';
-        }
+        const strength = evaluatePasswordStrength(passwordInput.value);
+        updateStrengthDisplay(strength);
         updateSubmitButton();
     });
 
@@ -193,7 +250,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     updateSubmitButton();
 });
-
 </script>
 
 </body>

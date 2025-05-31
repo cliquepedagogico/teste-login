@@ -231,3 +231,81 @@ def pagina_usuario():
 
     finally:
         db_session.close()
+
+
+# ROTA: Solicitar redefinição de senha
+@auth.route('/esqueci_senha', methods=['GET', 'POST'])
+def esqueci_senha():
+    if request.method == 'POST':
+        email = request.form['email']
+        db_session = Session()
+        usuario = db_session.query(Assinatura).filter_by(email=email).first()
+        db_session.close()
+
+        if usuario:
+            serializer = get_serializer()
+            token = serializer.dumps(email, salt='recuperar-senha')
+            reset_url = url_for('auth.redefinir_senha', token=token, _external=True)
+
+            assunto = 'Recuperação de Senha'
+            corpo = f'Olá! Clique no link abaixo para redefinir sua senha (válido por 1 hora):\n\n{reset_url}'
+
+            msg = Message(assunto, recipients=[email])
+            msg.body = corpo
+
+            try:
+                with current_app.app_context():
+                    mail = current_app.extensions['mail']
+                    mail.send(msg)
+                flash('Enviamos um link de recuperação para seu e-mail.', 'info')
+            except Exception as e:
+                print(f'❌ Erro ao enviar e-mail: {str(e)}')
+                flash('Erro ao enviar e-mail de recuperação. Tente novamente.', 'danger')
+        else:
+            flash('E-mail não encontrado.', 'warning')
+
+        return redirect(url_for('auth.login'))
+
+    return render_template('esqueci_senha.html')
+
+# ROTA: Redefinir senha usando token
+@auth.route('/redefinir_senha/<token>', methods=['GET', 'POST'])
+def redefinir_senha(token):
+    serializer = get_serializer()
+    try:
+        email = serializer.loads(token, salt='recuperar-senha', max_age=3600)
+    except SignatureExpired:
+        flash('O link expirou. Solicite novamente.', 'danger')
+        return redirect(url_for('auth.esqueci_senha'))
+    except BadSignature:
+        flash('Link inválido.', 'danger')
+        return redirect(url_for('auth.esqueci_senha'))
+
+    if request.method == 'POST':
+        nova_senha = request.form['password']
+
+        if check_password_strength(nova_senha) == 'fraca':
+            flash('A nova senha é muito fraca.', 'danger')
+            return redirect(url_for('auth.redefinir_senha', token=token))
+
+        try:
+            hashed_password = ph.hash(nova_senha)
+            db_session = Session()
+            usuario = db_session.query(Assinatura).filter_by(email=email).first()
+
+            if usuario:
+                usuario.senha = hashed_password
+                db_session.commit()
+                flash('Senha redefinida com sucesso! Agora você pode fazer login.', 'success')
+            else:
+                flash('Usuário não encontrado.', 'danger')
+
+        except Exception as e:
+            db_session.rollback()
+            flash(f'Erro ao redefinir a senha: {str(e)}', 'danger')
+        finally:
+            db_session.close()
+
+        return redirect(url_for('auth.login'))
+
+    return render_template('redefinir_senha.html', token=token)

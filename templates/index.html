@@ -20,7 +20,10 @@
                     <input type="password" name="password" placeholder="Senha" required>
                     <button id="Entrar">Entrar</button>
                 </form>
+                <a id="esc-senha" href="{{ url_for('auth.esqueci_senha') }}">Esqueci minha senha?</a>
             </div>
+           
+
     </section>
 </body>
     <script src="{{ url_for('static', filename='scripts.js') }}"></script>
