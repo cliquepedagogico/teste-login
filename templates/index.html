@@ -17,8 +17,13 @@
                 <h2>Login</h2>
                 <form action="/login" method="POST">
                     <input type="text" name="username" placeholder="Usuário" required >
-                    <input type="password" name="password" placeholder="Senha" required>
+                     <input type="password" name="password" id="password" placeholder="Senha" required>
+                   <div class="input-container">
+                   <button type="button" class="toggle-password" data-target="password">🔒</button>
+                   </div>
+                
                     <button id="Entrar">Entrar</button>
+                    
                 </form>
                 <a id="esc-senha" href="{{ url_for('auth.esqueci_senha') }}">Esqueci minha senha?</a>
             </div>
@@ -26,5 +31,23 @@
 
     </section>
 </body>
-    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const targetInput = document.getElementById(targetId);
+
+            if (targetInput.type === 'password') {
+                targetInput.type = 'text';
+                this.textContent = '🔓'; // muda ícone para "ocultar"
+            } else {
+                targetInput.type = 'password';
+                this.textContent = '🔒'; // muda ícone para "mostrar"
+            }
+        });
+    });
+});
+
+    </script>
 </html>
